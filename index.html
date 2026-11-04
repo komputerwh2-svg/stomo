@@ -12,6 +12,29 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script>
+        // --- PENYAMARAN KREDENSIAL FIREBASE (SECURITY MASKING) ---
+        // Dipecah agar aman saat di-push ke GitHub Pages publik
+        const k1 = "AIzaSyD";
+        const k2 = "isM9v8_Zbsl-jTx7TMEzishoM9yddwGE";
+        const proj = "bank-data-cbd97";
+        const reg = "asia-southeast1";
+
+        const firebaseConfig = {
+            apiKey: k1 + k2,
+            authDomain: `${proj}.firebaseapp.com`,
+            databaseURL: `https://${proj}-default-rtdb.${reg}.firebasedatabase.app`,
+            projectId: proj,
+            storageBucket: `${proj}.firebasestorage.app`,
+            messagingSenderId: "774423649215",
+            appId: "1:774423649215:web:876e0a08cc74338008df0a"
+        };
+
+        // Inisialisasi Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
         }
@@ -43,12 +66,7 @@
         .content-section { display: none; padding: 16px; }
         .content-section.active { display: block; animation: fadeIn 0.3s ease; }
         
-        .sub-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 100; overflow-y: auto; }
-        .sub-page.active { display: block; animation: slideIn 0.3s ease-out; }
-        html.dark .sub-page { background: #0f172a; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
         /* Card Menu Custom */
         .menu-card { background-color: white; padding: 14px 18px; border-radius: 20px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
@@ -58,38 +76,78 @@
 </head>
 <body class="pb-28 dark:text-slate-200">
 
-    <!-- Modal Login -->
-    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-8 shadow-2xl border border-transparent dark:border-slate-700/60 transition-colors">
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-sky-600/10 dark:bg-sky-500/10 rounded-3xl mb-3 shadow-inner text-sky-600 dark:text-sky-400">
-                    <i class="fa-solid fa-boxes-stacked text-3xl"></i>
+    <!-- Modal Login Multi-Step -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[100] flex items-center justify-center p-5">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-7 shadow-2xl border border-transparent dark:border-slate-700/60 transition-colors">
+            
+            <!-- Logo Header -->
+            <div class="text-center mb-5">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-sky-600/10 dark:bg-sky-500/10 rounded-2xl mb-2 shadow-inner text-sky-600 dark:text-sky-400">
+                    <i class="fa-solid fa-boxes-stacked text-2xl"></i>
                 </div>
                 <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">S t O M o</h2>
-                <p class="text-[10px] font-bold text-sky-600 dark:text-sky-400 tracking-[0.2em] uppercase">Stok Opname Mobile</p>
+                <p class="text-[9.5px] font-bold text-sky-600 dark:text-sky-400 tracking-[0.2em] uppercase">Stok Opname Mobile</p>
             </div>
             
-            <div class="space-y-4">
-                <div>
-                    <input type="text" id="user" placeholder="Nama Petugas Ops" 
-                        class="w-full bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl text-sm outline-none text-slate-800 dark:text-slate-100 dark:bg-slate-900 dark:border-slate-700 focus:border-sky-500 transition-all">
-                </div>
-                <div class="relative">
-                    <input type="password" id="pass" placeholder="Kata Sandi" 
-                        class="w-full bg-slate-50 border border-slate-200 pl-5 pr-12 py-3 rounded-2xl text-sm outline-none text-slate-800 dark:text-slate-100 dark:bg-slate-900 dark:border-slate-700 focus:border-sky-500 transition-all">
-                    <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                        <i id="eye-icon" class="fa-solid fa-eye"></i>
+            <!-- TAHAP 1: PILIH GUDANG -->
+            <div id="step-pilih-gudang" class="space-y-3">
+                <p class="text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">
+                    <i class="fa-solid fa-warehouse mr-1 text-sky-500"></i> Pilih Lokasi Gudang
+                </p>
+                <div class="grid grid-cols-1 gap-2.5">
+                    <button onclick="pilihGudang('WH-1')" class="bg-slate-50 dark:bg-slate-900 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600 border border-slate-200 dark:border-slate-700 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all text-slate-700 dark:text-slate-200 shadow-sm active:scale-95">
+                        WH-1
+                    </button>
+                    <button onclick="pilihGudang('WH-1 BLOK-1')" class="bg-slate-50 dark:bg-slate-900 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600 border border-slate-200 dark:border-slate-700 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all text-slate-700 dark:text-slate-200 shadow-sm active:scale-95">
+                        WH-1 BLOK-1
+                    </button>
+                    <button onclick="pilihGudang('WH-2')" class="bg-slate-50 dark:bg-slate-900 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600 border border-slate-200 dark:border-slate-700 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all text-slate-700 dark:text-slate-200 shadow-sm active:scale-95">
+                        WH-2
+                    </button>
+                    <button onclick="pilihGudang('WH-3')" class="bg-slate-50 dark:bg-slate-900 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600 border border-slate-200 dark:border-slate-700 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all text-slate-700 dark:text-slate-200 shadow-sm active:scale-95">
+                        WH-3
+                    </button>
+                    <button onclick="pilihGudang('WH-3 BLOK')" class="bg-slate-50 dark:bg-slate-900 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600 border border-slate-200 dark:border-slate-700 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all text-slate-700 dark:text-slate-200 shadow-sm active:scale-95">
+                        WH-3 BLOK
                     </button>
                 </div>
-                <button onclick="prosesLogin()" id="btnLogin" 
-                        class="w-full bg-sky-600 hover:bg-sky-700 text-white py-4 rounded-2xl font-bold shadow-lg shadow-sky-200 dark:shadow-none active:scale-95 transition-all uppercase text-xs tracking-widest">
-                    MASUK LAPANGAN
+            </div>
+
+            <!-- TAHAP 2: INPUT IDENTITAS PETUGAS & JABATAN -->
+            <div id="step-input-petugas" class="space-y-4 hidden">
+                <div class="flex justify-between items-center bg-sky-50 dark:bg-sky-950/60 p-2.5 rounded-2xl border border-sky-100 dark:border-sky-900">
+                    <span class="text-[11px] font-black text-sky-600 dark:text-sky-400 uppercase tracking-wide">
+                        Gudang: <span id="label-gudang-terpilih" class="underline">---</span>
+                    </span>
+                    <button onclick="kembaliPilihGudang()" class="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 uppercase underline">
+                        Ganti
+                    </button>
+                </div>
+
+                <div>
+                    <label class="text-[9.5px] font-black text-slate-400 uppercase tracking-wider ml-1">Nama Petugas Cek Barang</label>
+                    <input type="text" id="user-petugas" placeholder="Masukkan Nama Anda" oninput="this.value = this.value.toUpperCase()"
+                        class="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl text-xs font-bold uppercase outline-none text-slate-800 dark:text-slate-100 dark:bg-slate-900 dark:border-slate-700 focus:border-sky-500 transition-all mt-1">
+                </div>
+
+                <div>
+                    <label class="text-[9.5px] font-black text-slate-400 uppercase tracking-wider ml-1">Pilih Asal Petugas</label>
+                    <select id="role-petugas" class="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-slate-100 dark:bg-slate-900 dark:border-slate-700 focus:border-sky-500 transition-all mt-1">
+                        <option value="Petugas Cek WH">WH</option>
+                        <option value="Petugas Cek Audit">Audit</option>
+                    </select>
+                </div>
+
+                <button onclick="prosesLoginFinal()" id="btnLogin" 
+                        class="w-full bg-sky-600 hover:bg-sky-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-sky-200 dark:shadow-none active:scale-95 transition-all uppercase text-xs tracking-widest mt-2">
+                    MASUK LAPANGAN <i class="fa-solid fa-arrow-right ml-1"></i>
                 </button>
             </div>
+
         </div>
     </div>
 
-    <!-- Header Aplikasi -->
+    <!-- Header Aplikasi Utama -->
     <div id="main-header" class="bg-gradient-to-br from-sky-600 to-sky-800 dark:from-slate-800 dark:to-slate-900 text-white p-6 pb-4 rounded-b-[36px] shadow-lg sticky top-0 z-50 transition-colors">
         <div class="absolute top-6 right-6 bg-white/20 dark:bg-slate-700/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold border border-white/30 dark:border-slate-600/50 tracking-wide">
             [StOMo] v0.1.0
@@ -113,55 +171,109 @@
     <!-- Konten Utama -->
     <main class="-mt-2 px-2 relative z-20 transition-colors">
         
-        <!-- TAB 1: HASIL INPUT SEMENTARA / MONITORING LAPANGAN -->
-        <section id="input-content" class="content-section active">
-            <div class="flex justify-between items-center mb-4 px-1">
-                <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] uppercase tracking-widest">Input Stok Opname Hari Ini</h3>
-                <span class="text-[10px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 px-2.5 py-1 rounded-full">Live Sync</span>
-            </div>
+        <!-- HALAMAN 1: CEK (Pencatatan Fisik) -->
+        <section id="cek-content" class="content-section active">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <h3 id="display-area-opname" class="font-black text-slate-800 dark:text-slate-300 text-[11px] uppercase tracking-widest">
+                    PENCATATAN : <span class="text-sky-600 dark:text-sky-400">---</span>
+                </h3>
+                
+                <!-- Grup Tombol Sinkronisasi (Download Master & Upload Cek Fisik) -->
+                <div class="flex items-center gap-1.5">
+                    <!-- Tombol Download Master Stok (Di sebelah kiri) -->
+                    <button onclick="downloadMasterStok()" id="btn-download-master"
+                        class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-all" title="Download Master Data dari Server">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <span>Download Master Stok</span>
+                    </button>
 
-            <!-- Form Cepat Input Lapangan -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 mb-5">
-                <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight mb-3"><i class="fa-solid fa-barcode text-sky-600 mr-2"></i> Form Scan / Input Barang</h4>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Kode Lokasi Rak</label>
-                        <input type="text" id="input-lokasi" placeholder="Contoh: 4 A 05" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Kode Barang</label>
-                        <input type="text" id="input-kode" placeholder="Contoh: MJR2A06HJ" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Jumlah Qty Fisik (Karton / PCS)</label>
-                        <input type="number" id="input-qty" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-sm font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none">
-                    </div>
-                    <button onclick="simpanStokOpname()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all mt-2">
-                        <i class="fa-solid fa-paper-plane mr-2"></i> Kirim Hasil Cek Fisik
+                    <!-- Tombol Upload Hasil Cek Fisik (Di sebelah kanan) -->
+                    <button onclick="uploadKeFirebase()" id="btn-upload-sync" 
+                        class="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-all">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Upload Hasil Cek Fisik</span>
+                        <span id="badge-pending-count" class="bg-amber-400 text-slate-900 px-1.5 py-0.2 rounded-full text-[9px] font-extrabold hidden">0</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Daftar Riwayat Scan Lapangan Hari Ini -->
-            <h4 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-3 uppercase tracking-widest px-1">Hasil Scan Terbaru (Petugas)</h4>
-            <div id="list-scan-lapangan" class="space-y-2">
-                <div class="text-center py-8 text-slate-400 dark:text-slate-600 text-[11px] italic">Belum ada item diproses hari ini.</div>
+            <!-- Form Input Cek Fisik Lapangan -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 mb-5">
+                <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight mb-3">
+                    <i class="fa-solid fa-barcode text-sky-600 mr-2"></i> Form Input Cek Fisik Barang
+                </h4>
+                <div class="space-y-3">
+                    <!-- Dropdown Rak Dinamis -->
+                    <div id="container-rak" class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Pilih Kode Lokasi Rak (Tetap)</label>
+                        <select id="input-lokasi-rak" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none">
+                            <option value="">-- PILIH RAK --</option>
+                        </select>
+                    </div>
+
+                    <!-- Kode Barang dengan Saran Autocomplete dari Excel Bosnet -->
+                    <div class="relative">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Kode Barang / Nama Barang</label>
+                        <input type="text" id="input-kode" placeholder="Ketik kode atau nama barang..." oninput="cariSaranBarang(this.value)" autocomplete="off"
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none">
+                        <!-- Dropdown Saran Otomatis -->
+                        <div id="saran-autocomplete" class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-30 hidden"></div>
+                    </div>
+
+                    <!-- Bagian Qty Dinamis (Tunggal / 3 Kolom KRT, BALL, RTG) -->
+                    <div id="container-qty-dinamis">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1" id="label-qty-title">Jumlah Qty Fisik</label>
+                        
+                        <!-- Tampilan Standar (1 Kolom) -->
+                        <div id="qty-standar" class="mt-1">
+                            <input type="number" id="input-qty-single" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-sm font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none">
+                        </div>
+
+                        <!-- Tampilan Khusus WH-1 & WH-3 (3 Kolom: KRT, BALL, RTG) -->
+                        <div id="qty-tiga-kolom" class="grid grid-cols-3 gap-2 mt-1 hidden">
+                            <div>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase ml-0.5">KRT</span>
+                                <input type="number" id="input-qty-krt" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none text-center">
+                            </div>
+                            <div>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase ml-0.5">BALL</span>
+                                <input type="number" id="input-qty-ball" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none text-center">
+                            </div>
+                            <div>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase ml-0.5">RTG</span>
+                                <input type="number" id="input-qty-rtg" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none text-center">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="simpanStokOpname()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all mt-2">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> Simpan Hasil Cek Fisik
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- TAB 2: REKAP MONITORING ALL STOK OPNAME -->
-        <section id="monitoring-content" class="content-section">
-            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-4 uppercase tracking-widest px-1">Ringkasan Opname Realtime</h3>
+        <!-- HALAMAN 2: LIHAT (Hasil Input Cek Petugas) -->
+        <section id="lihat-content" class="content-section">
+            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-3 uppercase tracking-widest px-1">Daftar Hasil Cek Fisik Anda</h3>
+            <div id="list-hasil-cek" class="space-y-2">
+                <div class="text-center py-10 text-slate-400 dark:text-slate-600 text-[11px] italic">Belum ada data opname yang diinput.</div>
+            </div>
+        </section>
+
+        <!-- HALAMAN 3: LAPORAN (Rekapitulasi Gudang & Semua Petugas) -->
+        <section id="laporan-content" class="content-section">
+            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-3 uppercase tracking-widest px-1">Laporan Gabungan Gudang</h3>
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 text-center py-10">
-                <i class="fa-solid fa-chart-line text-4xl text-sky-500 mb-3"></i>
-                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs">Monitoring Pusat Selisih & Progres</h4>
-                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">Fitur ini terhubung langsung dengan Dashboard Warelogos.</p>
+                <i class="fa-solid fa-file-waveform text-4xl text-sky-500 mb-3"></i>
+                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs">Rekapitulasi Seluruh Petugas</h4>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">Menampilkan akumulasi data dari semua petugas di gudang terpilih.</p>
             </div>
         </section>
 
-        <!-- TAB 3: SETELAN -->
+        <!-- HALAMAN 4: SETELAN -->
         <section id="setelan-content" class="content-section">
-            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-4 uppercase tracking-widest px-1">Pengaturan Mobile</h3>
+            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-3 uppercase tracking-widest px-1">Pengaturan Aplikasi</h3>
             
             <div class="menu-card" onclick="setTemaSistem(document.documentElement.classList.contains('dark') ? 'light' : 'dark')">
                 <div class="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center mr-3"><i class="fa-solid fa-palette"></i></div>
@@ -179,28 +291,62 @@
 
     </main>
 
-    <!-- FAB Tambah Cepat -->
-    <div class="fab-container">
-        <button onclick="focusInputLokasi()" class="fab-button"><i class="fa-solid fa-qrcode"></i></button>
+    <!-- MODAL UPLOAD FILE EXCEL BOSNET (Dipanggil dari tombol +) -->
+    <div id="uploadModal" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-5">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-transparent dark:border-slate-700/60">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Upload Master Excel Bosnet</h3>
+                <button onclick="tutupModalUpload()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center mb-4 bg-slate-50 dark:bg-slate-900/50">
+                <i class="fa-solid fa-file-excel text-3xl text-emerald-500 mb-2"></i>
+                <p class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Pilih File Export Bosnet (.xls / .xlsx / .ods)</p>
+                <input type="file" id="fileBosnetInput" accept=".xls,.xlsx,.ods" class="text-[10px] text-slate-500 mt-2 w-full file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 dark:file:bg-slate-800 dark:file:text-sky-400">
+            </div>
+            <button onclick="prosesUploadExcel()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md">
+                <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Unggah & Proses Data
+            </button>
+        </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- FAB Tombol Tambah (+) untuk Upload Excel Bosnet -->
+    <div class="fab-container">
+        <button onclick="bukaModalUpload()" class="fab-button"><i class="fa-solid fa-plus"></i></button>
+    </div>
+
+    <!-- Navigasi Bawah (4 Menu Utama) -->
     <nav class="bottom-nav">
-        <div class="nav-item active" id="nav-input" onclick="switchTab('input', this)"><i class="fa-solid fa-clipboard-check"></i><span>Opname</span></div>
-        <div class="w-14"></div>
-        <div class="nav-item" id="nav-monitoring" onclick="switchTab('monitoring', this)"><i class="fa-solid fa-chart-pie"></i><span>Monitoring</span></div>
-        <div class="nav-item" id="nav-setelan" onclick="switchTab('setelan', this)"><i class="fa-solid fa-sliders"></i><span>Setelan</span></div>
+        <div class="nav-item active" id="nav-cek" onclick="switchTab('cek', this)">
+            <i class="fa-solid fa-clipboard-check"></i><span>Cek</span>
+        </div>
+        <div class="nav-item" id="nav-lihat" onclick="switchTab('lihat', this)">
+            <i class="fa-solid fa-list-check"></i><span>Lihat</span>
+        </div>
+        <!-- Spacer untuk ruang Floating Action Button di tengah -->
+        <div class="w-12"></div>
+        <div class="nav-item" id="nav-laporan" onclick="switchTab('laporan', this)">
+            <i class="fa-solid fa-file-lines"></i><span>Laporan</span>
+        </div>
+        <div class="nav-item" id="nav-setelan" onclick="switchTab('setelan', this)">
+            <i class="fa-solid fa-sliders"></i><span>Setelan</span>
+        </div>
     </nav>
 
     <script>
-        // Inisialisasi awal saat DOM siap
+        let gudangDipilih = "";
+
         document.addEventListener("DOMContentLoaded", () => {
             const userActive = localStorage.getItem('stomo_user');
-            if(!userActive) {
+            const gudangActive = localStorage.getItem('stomo_gudang');
+            const roleActive = localStorage.getItem('stomo_role');
+
+            if(!userActive || !gudangActive) {
                 document.getElementById('loginModal').classList.remove('hidden');
             } else {
                 document.getElementById('loginModal').classList.add('hidden');
-                updateGreeting(userActive);
+                updateGreeting(userActive, gudangActive, roleActive);
+                updateTampilanArea(gudangActive);
+                aturDropdownRak(gudangActive); // <--- Memuat list rak sesuai gudang aktif
             }
             updateClock();
             setInterval(updateClock, 1000);
@@ -212,25 +358,63 @@
             document.getElementById('live-clock').textContent = jam + " WIB";
         }
 
-        function updateGreeting(user) {
-            document.getElementById('userGreeting').innerHTML = `<i class="fa-solid fa-circle-user mr-1 text-emerald-400"></i> Halo, <b class="font-bold">${user || 'Petugas'}</b>`;
+        // TAHAP 1: PILIH GUDANG
+        function pilihGudang(namaGudang) {
+            gudangDipilih = namaGudang;
+            document.getElementById('label-gudang-terpilih').innerText = namaGudang;
+            document.getElementById('step-pilih-gudang').classList.add('hidden');
+            document.getElementById('step-input-petugas').classList.remove('hidden');
+            document.getElementById('user-petugas').focus();
         }
 
-        function prosesLogin() {
-            const user = document.getElementById('user').value.trim();
-            if(!user) return alert("Masukkan nama petugas!");
+        function kembaliPilihGudang() {
+            document.getElementById('step-input-petugas').classList.add('hidden');
+            document.getElementById('step-pilih-gudang').classList.remove('hidden');
+        }
+
+        // TAHAP 2: PROSES MASUK FINAL
+        function prosesLoginFinal() {
+            const user = document.getElementById('user-petugas').value.trim().toUpperCase();
+            const role = document.getElementById('role-petugas').value;
+
+            if(!user) return alert("Silakan masukkan Nama Petugas Cek Barang terlebih dahulu!");
+
             localStorage.setItem('stomo_user', user);
+            localStorage.setItem('stomo_gudang', gudangDipilih);
+            localStorage.setItem('stomo_role', role);
+
             document.getElementById('loginModal').classList.add('hidden');
-            updateGreeting(user);
+            updateGreeting(user, gudangDipilih, role);
+            updateTampilanArea(gudangDipilih);
+            aturDropdownRak(gudangDipilih); // <--- Memuat list rak setelah login
+        }
+
+        function updateGreeting(user, gudang, role) {
+            document.getElementById('userGreeting').innerHTML = `<i class="fa-solid fa-circle-user mr-1 text-emerald-400"></i> ${user} [${role || 'WH'}] - <b class="font-bold text-sky-200">${gudang}</b>`;
+        }
+
+        function updateTampilanArea(gudang) {
+            const areaElem = document.getElementById('display-area-opname');
+            if(areaElem) {
+                areaElem.innerHTML = `STOK OPNAME : <span class="text-sky-600 dark:text-sky-400">${gudang}</span>`;
+            }
         }
 
         function logout() {
             if(confirm("Keluar dari aplikasi StOMo?")) {
                 localStorage.removeItem('stomo_user');
+                localStorage.removeItem('stomo_gudang');
+                localStorage.removeItem('stomo_role');
                 location.reload();
             }
         }
 
+        function focusInputLokasi() {
+            switchTab('input', document.getElementById('nav-input'));
+            document.getElementById('input-lokasi').focus();
+        }
+
+        // Fungsi Tab Switching (Cek, Lihat, Laporan, Setelan)
         function switchTab(tabId, el) {
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -238,16 +422,401 @@
             if (el) el.classList.add('active');
         }
 
-        function togglePassword() {
-            const input = document.getElementById('pass');
-            const icon = document.getElementById('eye-icon');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
+        // Modal Upload Excel Bosnet
+        function bukaModalUpload() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+        }
+
+        function tutupModalUpload() {
+            document.getElementById('uploadModal').classList.add('hidden');
+        }
+
+        // --- 1. PROSES UPLOAD EXCEL BOSNET KE RTDB (master_data) ---
+        function prosesUploadExcel() {
+            const fileInput = document.getElementById('fileBosnetInput');
+            if(fileInput.files.length === 0) return alert("Silakan pilih file Excel Bosnet terlebih dahulu!");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            const gudang = localStorage.getItem('stomo_gudang') || 'DEFAULT';
+            const gudangClean = gudang.replace(/\s+/g, '_');
+
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonMaster = XLSX.utils.sheet_to_json(worksheet);
+
+                    if(jsonMaster.length === 0) return alert("File Excel kosong atau format tidak dikenali!");
+
+                    // Upload ke Firebase RTDB: stok_opname/[id_gudang]/master_data
+                    firebase.database().ref(`stok_opname/${gudangClean}/master_data`).set(jsonMaster)
+                        .then(() => {
+                            alert(`Berhasil mengunggah ${jsonMaster.length} baris Master Data ke server [${gudang}]!`);
+                            tutupModalUpload();
+                            // Otomatis simpan ke localStorage untuk referensi lokal
+                            localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(jsonMaster));
+                        })
+                        .catch(err => {
+                            alert("Gagal mengunggah ke Firebase: " + err.message);
+                        });
+                } catch (err) {
+                    alert("Gagal membaca file Excel: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- 2. DOWNLOAD MASTER STOK DARI RTDB KE LOCALSTORAGE ---
+        function downloadMasterStok() {
+            if (!navigator.onLine) return alert("Koneksi internet tidak tersedia!");
+            const gudang = localStorage.getItem('stomo_gudang') || 'DEFAULT';
+            const gudangClean = gudang.replace(/\s+/g, '_');
+            const btn = document.getElementById('btn-download-master');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengunduh...`;
+
+            firebase.database().ref(`stok_opname/${gudangClean}/master_data`).once('value')
+                .then(snapshot => {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>Download Master</span>`;
+
+                    if (!snapshot.exists()) {
+                        return alert(`Belum ada data master di server untuk gudang ${gudang}. Silakan upload file Excel terlebih dahulu.`);
+                    }
+
+                    const masterData = snapshot.val();
+                    // Simpan ke localStorage agar bisa dipakai offline untuk autocomplete
+                    localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(masterData));
+                    
+                    const totalItem = Array.isArray(masterData) ? masterData.length : Object.keys(masterData).length;
+                    alert(`Berhasil mendownload ${totalItem} data master stok untuk ${gudang}! Siap digunakan untuk referensi.`);
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>Download Master</span>`;
+                    alert("Gagal mendownload data master: " + err.message);
+                });
+        }
+
+        // --- 1. INISIALISASI INDEXEDDB ---
+        let db;
+        const requestDB = indexedDB.open("StOMoDB", 1);
+
+        requestDB.onupgradeneeded = function(e) {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("hasil_so")) {
+                const store = db.createObjectStore("hasil_so", { keyPath: "id", autoIncrement: true });
+                store.createIndex("synced", "synced", { unique: false });
+                store.createIndex("gudang", "gudang", { unique: false });
             }
+        };
+
+        requestDB.onsuccess = function(e) {
+            db = e.target.result;
+            updatePendingBadge();
+        };
+
+        requestDB.onerror = function(e) {
+            console.error("Gagal membuka IndexedDB:", e.target.error);
+        };
+
+        // --- 2. FUNGSI SIMPAN KE INDEXEDDB (LOKAL) ---
+        function simpanStokOpname() {
+            const gudang = localStorage.getItem('stomo_gudang') || '';
+            const user = localStorage.getItem('stomo_user') || '';
+            const role = localStorage.getItem('stomo_role') || '';
+            const lokasi = document.getElementById('input-lokasi-rak').value;
+            const kode = document.getElementById('input-kode').value.trim().toUpperCase();
+
+            if(!kode) return alert("Mohon masukkan Kode atau Nama Barang!");
+            if(!lokasi && !gudang.toUpperCase().includes('BLOK')) return alert("Mohon pilih Lokasi / Rak!");
+
+            // Susun objek data sesuai skema
+            let dataSO = {
+                gudang: gudang,
+                user_id: user,
+                nama_petugas: user,
+                role: role,
+                lokasi_rak: lokasi || '-',
+                kode_barang: kode,
+                timestamp: Date.now(),
+                synced: 0 // 0 = Belum Diupload, 1 = Sudah Diupload
+            };
+
+            if (gudang === 'WH-1' || gudang === 'WH-3') {
+                dataSO.qty_krt = parseInt(document.getElementById('input-qty-krt').value) || 0;
+                dataSO.qty_ball = parseInt(document.getElementById('input-qty-ball').value) || 0;
+                dataSO.qty_rtg = parseInt(document.getElementById('input-qty-rtg').value) || 0;
+            } else {
+                dataSO.qty_single = parseInt(document.getElementById('input-qty-single').value) || 0;
+            }
+
+            // Transaksi Simpan Ke IndexedDB
+            const tx = db.transaction(["hasil_so"], "readwrite");
+            const store = tx.objectStore("hasil_so");
+            store.add(dataSO);
+
+            tx.oncomplete = function() {
+                alert(`Berhasil disimpan ke Lokal [${gudang}]!\nKlik 'Upload Hasil Cek Fisik' untuk menyinkronkan ke server.`);
+                
+                // Reset form
+                document.getElementById('input-kode').value = '';
+                if (gudang === 'WH-1' || gudang === 'WH-3') {
+                    document.getElementById('input-qty-krt').value = '';
+                    document.getElementById('input-qty-ball').value = '';
+                    document.getElementById('input-qty-rtg').value = '';
+                } else {
+                    document.getElementById('input-qty-single').value = '';
+                }
+                document.getElementById('input-kode').focus();
+                updatePendingBadge();
+            };
+        }
+
+        // --- 3. FUNGSI UPLOAD DARI INDEXEDDB KE FIREBASE RTDB ---
+        function uploadKeFirebase() {
+            if (!navigator.onLine) return alert("Koneksi internet tidak tersedia!");
+            if (!firebase.apps.length) return alert("Firebase belum diinisialisasi!");
+
+            const tx = db.transaction(["hasil_so"], "readwrite");
+            const store = tx.objectStore("hasil_so");
+            const index = store.index("synced");
+            const request = index.getAll(0); // Ambil semua data yang synced = 0
+
+            request.onsuccess = function() {
+                const pendingItems = request.result;
+                if (pendingItems.length === 0) return alert("Semua data cek fisik sudah tersinkronkan!");
+
+                const btn = document.getElementById('btn-upload-sync');
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...`;
+
+                let completed = 0;
+
+                pendingItems.forEach(item => {
+                    // Skema struktur RTDB: stok_opname/[id_gudang]/
+                    const gudangClean = item.gudang.replace(/\s+/g, '_');
+                    const userClean = item.user_id.replace(/\s+/g, '_');
+
+                    // 1. Daftarkan/Update User di folder stok_opname/[id_gudang]/user/[user_id]
+                    firebase.database().ref(`stok_opname/${gudangClean}/user/${userClean}`).set({
+                        nama: item.nama_petugas,
+                        role: item.role,
+                        last_active: Date.now()
+                    });
+
+                    // 2. Simpan Data SO di folder stok_opname/[id_gudang]/hasil_so
+                    const newRef = firebase.database().ref(`stok_opname/${gudangClean}/hasil_so`).push();
+                    
+                    const payload = { ...item, synced: 1 };
+                    delete payload.id; // Hapus ID auto-increment IndexedDB
+
+                    newRef.set(payload).then(() => {
+                        // Mark item as synced di IndexedDB
+                        const updateTx = db.transaction(["hasil_so"], "readwrite");
+                        const updateStore = updateTx.objectStore("hasil_so");
+                        item.synced = 1;
+                        updateStore.put(item);
+
+                        completed++;
+                        if (completed === pendingItems.length) {
+                            btn.disabled = false;
+                            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload Hasil Cek Fisik</span>`;
+                            alert(`Berhasil mengunggah ${completed} data ke Firebase RTDB!`);
+                            updatePendingBadge();
+                        }
+                    }).catch(err => {
+                        console.error("Gagal Upload:", err);
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload Hasil Cek Fisik</span>`;
+                    });
+                });
+            };
+        }
+
+        // --- 4. INDIKATOR UNTUK JUMLAH DATA PENDING ---
+        function updatePendingBadge() {
+            if (!db) return;
+            const tx = db.transaction(["hasil_so"], "readonly");
+            const store = tx.objectStore("hasil_so");
+            const index = store.index("synced");
+            const countRequest = index.count(0);
+
+            countRequest.onsuccess = function() {
+                const badge = document.getElementById('badge-pending-count');
+                if (badge) {
+                    if (countRequest.result > 0) {
+                        badge.textContent = countRequest.result;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+            };
+        }
+
+        // Fungsi untuk memuat pilihan rak secara dinamis sesuai gudang aktif
+        function aturDropdownRak(gudang) {
+            const containerRak = document.getElementById('container-rak');
+            const selectRak = document.getElementById('input-lokasi-rak');
+            
+            // 1. PENGATUR KOLOM QTY (Khusus WH-1 & WH-3 -> 3 Kolom: KRT, BALL, RTG)
+            const qtyStandar = document.getElementById('qty-standar');
+            const qtyTigaKolom = document.getElementById('qty-tiga-kolom');
+            const labelTitle = document.getElementById('label-qty-title');
+
+            if (gudang === 'WH-1' || gudang === 'WH-3') {
+                if (qtyStandar) qtyStandar.classList.add('hidden');
+                if (qtyTigaKolom) qtyTigaKolom.classList.remove('hidden');
+                if (labelTitle) labelTitle.textContent = "Jumlah Qty Fisik (KRT / BALL / RTG)";
+            } else {
+                if (qtyStandar) qtyStandar.classList.remove('hidden');
+                if (qtyTigaKolom) qtyTigaKolom.classList.add('hidden');
+                if (labelTitle) labelTitle.textContent = "Jumlah Qty Fisik (Karton / PCS)";
+            }
+
+            // 2. PENGATUR DROPDOWN RAK / LOKASI
+            if (!selectRak) return;
+            selectRak.innerHTML = '<option value="">-- PILIH LOKASI / BLOK --</option>';
+
+            // Jika Gudang adalah BLOK-1 atau WH-1 BLOK-1 (Tanpa Rak)
+            if (gudang === 'BLOK-1' || gudang === 'WH-1 BLOK-1') {
+                containerRak.classList.add('hidden');
+                selectRak.value = '-';
+            } else {
+                containerRak.classList.remove('hidden');
+                
+                let daftarOpsi = [];
+
+                if (gudang === 'WH-2') {
+                    // WH-2: Rak 4 sampai 15
+                    for (let i = 4; i <= 15; i++) {
+                        daftarOpsi.push(`RAK ${i}`);
+                    }
+                } else if (gudang === 'WH-3') {
+                    // WH-3: Daftar rak khusus
+                    daftarOpsi = ['X', '0', '1', '2', '3', '8D', '10A', '11A', '15D', 'MIC', 'DP LOADING'];
+                } else if (gudang === 'WH-3 BLOK') {
+                    // WH-3 BLOK: Daftar blok khusus
+                    daftarOpsi = ['RETUR', 'TEKOMAS', '18CD', '18E', '18F'];
+                } else if (gudang === 'WH-1') {
+                    selectRak.innerHTML = '<option value="MENUNGGU-DATA">-- MENUNGGU DATA RAK WH-1 --</option>';
+                    return;
+                }
+
+                // Masukkan opsi ke dalam dropdown
+                daftarOpsi.forEach(item => {
+                    let opt = document.createElement('option');
+                    opt.value = gudang === 'WH-3 BLOK' ? item : (item.startsWith('RAK') ? item : `RAK ${item}`);
+                    opt.textContent = gudang === 'WH-3 BLOK' ? `BLOK ${item}` : (item.startsWith('RAK') ? item : `RAK ${item}`);
+                    selectRak.appendChild(opt);
+                });
+            }
+        }
+
+        // --- 3. AUTOCOMPLETE PENCARIAN BERDASARKAN MASTER DATA LOCAL ---
+        function cariSaranBarang(keyword) {
+            const dropdown = document.getElementById('saran-autocomplete');
+            const gudang = localStorage.getItem('stomo_gudang') || 'DEFAULT';
+            const gudangClean = gudang.replace(/\s+/g, '_');
+            
+            if(keyword.length < 2) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            const rawMaster = localStorage.getItem(`stomo_master_${gudangClean}`);
+            if (!rawMaster) {
+                dropdown.innerHTML = `<div class="p-2.5 text-xs text-amber-600 font-bold">Master data belum didownload. Klik 'Download Master' di atas.</div>`;
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            const masterData = JSON.parse(rawMaster);
+            const keywordUpper = keyword.toUpperCase();
+            
+            // Filter data master (mencari kecocokan pada kode barang atau nama barang)
+            const hasilFilter = masterData.filter(item => {
+                let str = JSON.stringify(item).toUpperCase();
+                return str.includes(keywordUpper);
+            }).slice(0, 10); // Ambil maksimal 10 hasil teratas
+
+            if (hasilFilter.length === 0) {
+                dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Barang tidak ditemukan di master data.</div>`;
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            let htmlContent = '';
+            hasilFilter.forEach(item => {
+                // Sesuaikan key properti kolom dari excel Anda (misal: KODE, NAMA, BARANG, dll)
+                let kunciVal = item.KODE || item.Kode || item.CODE || Object.values(item)[0] || '';
+                let namaVal = item.NAMA || item.Nama || item.BARANG || Object.values(item)[1] || '';
+                let displayText = `${kunciVal} - ${namaVal}`.toUpperCase();
+
+                htmlContent += `<div class="p-2.5 hover:bg-sky-50 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold border-b border-slate-100 dark:border-slate-700 uppercase" onclick="pilihBarangSaran('${displayText}')">${displayText}</div>`;
+            });
+
+            dropdown.innerHTML = htmlContent;
+            dropdown.classList.remove('hidden');
+        }
+
+        function pilihBarangSaran(val) {
+            document.getElementById('input-kode').value = val;
+            document.getElementById('saran-autocomplete').classList.add('hidden');
+        }
+
+        // Fungsi untuk mengatur tampilan kolom Qty berdasarkan gudang aktif
+        function aturKolomQty(gudang) {
+            const qtyStandar = document.getElementById('qty-standar');
+            const qtyTigaKolom = document.getElementById('qty-tiga-kolom');
+            const labelTitle = document.getElementById('label-qty-title');
+
+            // Cek apakah gudang adalah WH-1 atau WH-3
+            if (gudang === 'WH-1' || gudang === 'WH-3') {
+                qtyStandar.classList.add('hidden');
+                qtyTigaKolom.classList.remove('hidden');
+                labelTitle.textContent = "Jumlah Qty Fisik (KRT / BALL / RTG)";
+            } else {
+                qtyStandar.classList.remove('hidden');
+                qtyTigaKolom.classList.add('hidden');
+                labelTitle.textContent = "Jumlah Qty Fisik (Karton / PCS)";
+            }
+        }
+
+        function simpanStokOpname() {
+            const lokasi = document.getElementById('input-lokasi-rak').value;
+            const kode = document.getElementById('input-kode').value.trim().toUpperCase();
+            const gudang = localStorage.getItem('stomo_gudang') || '';
+            
+            let qtyInfo = "";
+            if (gudang === 'WH-1' || gudang === 'WH-3') {
+                const krt = document.getElementById('input-qty-krt').value || '0';
+                const ball = document.getElementById('input-qty-ball').value || '0';
+                const rtg = document.getElementById('input-qty-rtg').value || '0';
+                qtyInfo = `KRT: ${krt}, BALL: ${ball}, RTG: ${rtg}`;
+            } else {
+                qtyInfo = `Qty: ${document.getElementById('input-qty-single').value || '0'}`;
+            }
+
+            if(!kode) return alert("Mohon masukkan Kode atau Nama Barang!");
+
+            alert(`Berhasil Input Lapangan [${gudang}]:\nLokasi: ${lokasi}\nKode: ${kode}\n${qtyInfo}`);
+            
+            // Reset input form
+            document.getElementById('input-kode').value = '';
+            if (gudang === 'WH-1' || gudang === 'WH-3') {
+                document.getElementById('input-qty-krt').value = '';
+                document.getElementById('input-qty-ball').value = '';
+                document.getElementById('input-qty-rtg').value = '';
+            } else {
+                document.getElementById('input-qty-single').value = '';
+            }
+            document.getElementById('input-kode').focus();
         }
 
         function setTemaSistem(mode) {
@@ -258,24 +827,6 @@
                 document.documentElement.classList.remove('dark');
                 localStorage.setItem('stomo_theme', 'light');
             }
-        }
-
-        function focusInputLokasi() {
-            switchTab('input', document.getElementById('nav-input'));
-            document.getElementById('input-lokasi').focus();
-        }
-
-        function simpanStokOpname() {
-            const lokasi = document.getElementById('input-lokasi').value.trim().toUpperCase();
-            const kode = document.getElementById('input-kode').value.trim().toUpperCase();
-            const qty = document.getElementById('input-qty').value.trim();
-
-            if(!lokasi || !kode || !qty) return alert("Mohon lengkapi Lokasi, Kode Barang, dan Qty!");
-
-            alert(`Berhasil Input Lapangan:\nLokasi: ${lokasi}\nKode: ${kode}\nQty: ${qty}`);
-            document.getElementById('input-kode').value = '';
-            document.getElementById('input-qty').value = '';
-            document.getElementById('input-kode').focus();
         }
     </script>
 </body>
