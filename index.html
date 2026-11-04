@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Stok Opname Mobile [StOMo] v0.1.0</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
+        html.dark body { background-color: #0f172a; }
+        
+        main { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 90px !important; }
+
+        /* Bottom Navigation Styling */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background-color: white; display: flex; justify-content: space-around; align-items: center; padding: 12px 10px 20px 10px; box-shadow: 0 -10px 25px rgba(0,0,0,0.05); border-radius: 25px 25px 0 0; z-index: 50; transition: background-color 0.3s; }
+        html.dark .bottom-nav { background-color: #1e293b; border-top: 1px solid #334155; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); }
+        
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #94a3b8; width: 20%; cursor: pointer; transition: all 0.3s; }
+        .nav-item.active { color: #0284c7; }
+        .nav-item i { font-size: 20px; margin-bottom: 2px; }
+        .nav-item span { font-size: 9px; font-weight: 700; text-transform: uppercase; }
+        html.dark .nav-item.active { color: #38bdf8; }
+
+        /* Floating Action Button */
+        .fab-container { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; align-items: center; }
+        .fab-button { width: 58px; height: 58px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 22px; box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4); border: 4px solid #f8fafc; transition: all 0.3s; }
+        html.dark .fab-button { border-color: #0f172a; }
+        .fab-button:active { transform: scale(0.92); }
+
+        /* Sections & Transitions */
+        .content-section { display: none; padding: 16px; }
+        .content-section.active { display: block; animation: fadeIn 0.3s ease; }
+        
+        .sub-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 100; overflow-y: auto; }
+        .sub-page.active { display: block; animation: slideIn 0.3s ease-out; }
+        html.dark .sub-page { background: #0f172a; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* Card Menu Custom */
+        .menu-card { background-color: white; padding: 14px 18px; border-radius: 20px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+        html.dark .menu-card { background-color: #1e293b; border-color: #334155; }
+        .menu-card:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="pb-28 dark:text-slate-200">
+
+    <!-- Modal Login -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-8 shadow-2xl border border-transparent dark:border-slate-700/60 transition-colors">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-sky-600/10 dark:bg-sky-500/10 rounded-3xl mb-3 shadow-inner text-sky-600 dark:text-sky-400">
+                    <i class="fa-solid fa-boxes-stacked text-3xl"></i>
+                </div>
+                <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">S t O M o</h2>
+                <p class="text-[10px] font-bold text-sky-600 dark:text-sky-400 tracking-[0.2em] uppercase">Stok Opname Mobile</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <input type="text" id="user" placeholder="Nama Petugas Ops" 
+                        class="w-full bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl text-sm outline-none text-slate-800 dark:text-slate-100 dark:bg-slate-900 dark:border-slate-700 focus:border-sky-500 transition-all">
+                </div>
+                <div class="relative">
+                    <input type="password" id="pass" placeholder="Kata Sandi" 
+                        class="w-full bg-slate-50 border border-slate-200 pl-5 pr-12 py-3 rounded-2xl text-sm outline-none text-slate-800 dark:text-slate-100 dark:bg-slate-900 dark:border-slate-700 focus:border-sky-500 transition-all">
+                    <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <i id="eye-icon" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <button onclick="prosesLogin()" id="btnLogin" 
+                        class="w-full bg-sky-600 hover:bg-sky-700 text-white py-4 rounded-2xl font-bold shadow-lg shadow-sky-200 dark:shadow-none active:scale-95 transition-all uppercase text-xs tracking-widest">
+                    MASUK LAPANGAN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Aplikasi -->
+    <div id="main-header" class="bg-gradient-to-br from-sky-600 to-sky-800 dark:from-slate-800 dark:to-slate-900 text-white p-6 pb-4 rounded-b-[36px] shadow-lg sticky top-0 z-50 transition-colors">
+        <div class="absolute top-6 right-6 bg-white/20 dark:bg-slate-700/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold border border-white/30 dark:border-slate-600/50 tracking-wide">
+            [StOMo] v0.1.0
+        </div>
+        
+        <h1 class="text-xl font-black tracking-wider text-white dark:text-slate-100">S t O M o</h1>
+        <h2 class="text-[11px] font-bold tracking-[0.2em] opacity-80 text-sky-100 dark:text-slate-300">Stok Opname Mobile</h2>
+        <p class="text-[9px] opacity-70 italic mb-4">Monitoring & Input Hasil Cek Lapangan Realtime</p>
+        
+        <div class="inline-flex items-center gap-3 bg-black/20 dark:bg-slate-950/40 px-3 py-2 rounded-xl border border-white/10 dark:border-slate-700/50 text-white dark:text-slate-200">
+            <div id="userGreeting" class="text-[11px] font-light border-r border-white/20 dark:border-slate-700 pr-3">
+                <i class="fa-solid fa-circle-user mr-1 text-emerald-400"></i> Memuat User...
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fa-regular fa-clock text-sky-200 dark:text-slate-400 text-xs"></i>
+                <div id="live-clock" class="text-[11px] font-light tracking-wide">--:--:--</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Konten Utama -->
+    <main class="-mt-2 px-2 relative z-20 transition-colors">
+        
+        <!-- TAB 1: HASIL INPUT SEMENTARA / MONITORING LAPANGAN -->
+        <section id="input-content" class="content-section active">
+            <div class="flex justify-between items-center mb-4 px-1">
+                <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] uppercase tracking-widest">Input Stok Opname Hari Ini</h3>
+                <span class="text-[10px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 px-2.5 py-1 rounded-full">Live Sync</span>
+            </div>
+
+            <!-- Form Cepat Input Lapangan -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 mb-5">
+                <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight mb-3"><i class="fa-solid fa-barcode text-sky-600 mr-2"></i> Form Scan / Input Barang</h4>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Kode Lokasi Rak</label>
+                        <input type="text" id="input-lokasi" placeholder="Contoh: 4 A 05" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Kode Barang</label>
+                        <input type="text" id="input-kode" placeholder="Contoh: MJR2A06HJ" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Jumlah Qty Fisik (Karton / PCS)</label>
+                        <input type="number" id="input-qty" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-sm font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none">
+                    </div>
+                    <button onclick="simpanStokOpname()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all mt-2">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> Kirim Hasil Cek Fisik
+                    </button>
+                </div>
+            </div>
+
+            <!-- Daftar Riwayat Scan Lapangan Hari Ini -->
+            <h4 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-3 uppercase tracking-widest px-1">Hasil Scan Terbaru (Petugas)</h4>
+            <div id="list-scan-lapangan" class="space-y-2">
+                <div class="text-center py-8 text-slate-400 dark:text-slate-600 text-[11px] italic">Belum ada item diproses hari ini.</div>
+            </div>
+        </section>
+
+        <!-- TAB 2: REKAP MONITORING ALL STOK OPNAME -->
+        <section id="monitoring-content" class="content-section">
+            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-4 uppercase tracking-widest px-1">Ringkasan Opname Realtime</h3>
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 text-center py-10">
+                <i class="fa-solid fa-chart-line text-4xl text-sky-500 mb-3"></i>
+                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs">Monitoring Pusat Selisih & Progres</h4>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">Fitur ini terhubung langsung dengan Dashboard Warelogos.</p>
+            </div>
+        </section>
+
+        <!-- TAB 3: SETELAN -->
+        <section id="setelan-content" class="content-section">
+            <h3 class="font-bold text-slate-800 dark:text-slate-300 text-[11px] mb-4 uppercase tracking-widest px-1">Pengaturan Mobile</h3>
+            
+            <div class="menu-card" onclick="setTemaSistem(document.documentElement.classList.contains('dark') ? 'light' : 'dark')">
+                <div class="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center mr-3"><i class="fa-solid fa-palette"></i></div>
+                <div class="flex-grow">
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">Ganti Tema Tampilan</h4>
+                    <p class="text-[10px] text-slate-400">Mode Terang / Mode Gelap</p>
+                </div>
+            </div>
+
+            <div class="menu-card border-red-100 dark:border-red-950/30" onclick="logout()">
+                <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-500 flex items-center justify-center mr-3"><i class="fa-solid fa-power-off"></i></div>
+                <div class="flex-grow"><h4 class="text-xs font-bold text-red-500 uppercase tracking-wide">Keluar Akun</h4></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FAB Tambah Cepat -->
+    <div class="fab-container">
+        <button onclick="focusInputLokasi()" class="fab-button"><i class="fa-solid fa-qrcode"></i></button>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="nav-input" onclick="switchTab('input', this)"><i class="fa-solid fa-clipboard-check"></i><span>Opname</span></div>
+        <div class="w-14"></div>
+        <div class="nav-item" id="nav-monitoring" onclick="switchTab('monitoring', this)"><i class="fa-solid fa-chart-pie"></i><span>Monitoring</span></div>
+        <div class="nav-item" id="nav-setelan" onclick="switchTab('setelan', this)"><i class="fa-solid fa-sliders"></i><span>Setelan</span></div>
+    </nav>
+
+    <script>
+        // Inisialisasi awal saat DOM siap
+        document.addEventListener("DOMContentLoaded", () => {
+            const userActive = localStorage.getItem('stomo_user');
+            if(!userActive) {
+                document.getElementById('loginModal').classList.remove('hidden');
+            } else {
+                document.getElementById('loginModal').classList.add('hidden');
+                updateGreeting(userActive);
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        });
+
+        function updateClock() {
+            const now = new Date();
+            const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/:/g, '.');
+            document.getElementById('live-clock').textContent = jam + " WIB";
+        }
+
+        function updateGreeting(user) {
+            document.getElementById('userGreeting').innerHTML = `<i class="fa-solid fa-circle-user mr-1 text-emerald-400"></i> Halo, <b class="font-bold">${user || 'Petugas'}</b>`;
+        }
+
+        function prosesLogin() {
+            const user = document.getElementById('user').value.trim();
+            if(!user) return alert("Masukkan nama petugas!");
+            localStorage.setItem('stomo_user', user);
+            document.getElementById('loginModal').classList.add('hidden');
+            updateGreeting(user);
+        }
+
+        function logout() {
+            if(confirm("Keluar dari aplikasi StOMo?")) {
+                localStorage.removeItem('stomo_user');
+                location.reload();
+            }
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId + '-content').classList.add('active');
+            if (el) el.classList.add('active');
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('pass');
+            const icon = document.getElementById('eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function setTemaSistem(mode) {
+            if (mode === 'dark') {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('stomo_theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('stomo_theme', 'light');
+            }
+        }
+
+        function focusInputLokasi() {
+            switchTab('input', document.getElementById('nav-input'));
+            document.getElementById('input-lokasi').focus();
+        }
+
+        function simpanStokOpname() {
+            const lokasi = document.getElementById('input-lokasi').value.trim().toUpperCase();
+            const kode = document.getElementById('input-kode').value.trim().toUpperCase();
+            const qty = document.getElementById('input-qty').value.trim();
+
+            if(!lokasi || !kode || !qty) return alert("Mohon lengkapi Lokasi, Kode Barang, dan Qty!");
+
+            alert(`Berhasil Input Lapangan:\nLokasi: ${lokasi}\nKode: ${kode}\nQty: ${qty}`);
+            document.getElementById('input-kode').value = '';
+            document.getElementById('input-qty').value = '';
+            document.getElementById('input-kode').focus();
+        }
+    </script>
+</body>
+</html>
