@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f172a">
-    <title>Stok Opname Mobile [StOMo] v0.1.0</title>
+    <title>Stok Opname Mobile</title>
     <link rel="icon" type="image/png" href="icon.png">
 
     <!-- PWA Manifest & Meta Tags -->
@@ -14,6 +14,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
 
+    <!-- Pustaka SheetJS untuk Membaca File Excel (.xls / .xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,7 +24,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script>
         // --- PENYAMARAN KREDENSIAL FIREBASE (SECURITY MASKING) ---
-        // Dipecah agar aman saat di-push ke GitHub Pages publik
         const k1 = "AIzaSyD";
         const k2 = "isM9v8_Zbsl-jTx7TMEzishoM9yddwGE";
         const proj = "bank-data-cbd97";
@@ -173,7 +175,7 @@
     <!-- Header Aplikasi Utama -->
     <div id="main-header" class="bg-gradient-to-br from-sky-600 to-sky-800 dark:from-slate-800 dark:to-slate-900 text-white p-6 pb-4 rounded-b-[36px] shadow-lg sticky top-0 z-50 transition-colors">
         <div class="absolute top-6 right-6 bg-white/20 dark:bg-slate-700/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold border border-white/30 dark:border-slate-600/50 tracking-wide">
-            [StOMo] v0.1.0
+            <span id="app-version-header">[StOMo] v0.1.0</span>
         </div>
         
         <h1 class="text-xl font-black tracking-wider text-white dark:text-slate-100">S t O M o</h1>
@@ -266,6 +268,18 @@
                     </button>
                 </div>
             </div>
+            <!-- KONTAINER RIWAYAT INPUT TERAKHIR (LIVE FEED) -->
+            <div class="mt-6 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">Riwayat Input Terakhir</span>
+                    <span class="text-[10px] bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400 px-2 py-0.5 rounded-full font-bold">Live 5 Data</span>
+                </div>
+                
+                <!-- Daftar List Riwayat -->
+                <div id="riwayat-input-container" class="space-y-2 relative overflow-hidden">
+                    <!-- Data riwayat akan dirender secara dinamis oleh JS di sini -->
+                </div>
+            </div>
         </section>
 
         <!-- HALAMAN 2: LIHAT (Hasil Input Cek Petugas & Tombol Upload) -->
@@ -329,21 +343,39 @@
         </section>
     </main>
 
-    <!-- MODAL UPLOAD FILE EXCEL BOSNET (Dipanggil dari tombol +) -->
+    <!-- MODAL UPLOAD MASTER EXCEL BOSNET (Gaya Mirip Upload WH-2) -->
     <div id="uploadModal" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-5">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-transparent dark:border-slate-700/60">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Upload Master Excel Bosnet</h3>
-                <button onclick="tutupModalUpload()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center mb-4 bg-slate-50 dark:bg-slate-900/50">
-                <i class="fa-solid fa-file-excel text-3xl text-emerald-500 mb-2"></i>
-                <p class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">Pilih File Export Bosnet (.xls / .xlsx / .ods)</p>
-                <input type="file" id="fileBosnetInput" accept=".xls,.xlsx,.ods" class="text-[10px] text-slate-500 mt-2 w-full file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 dark:file:bg-slate-800 dark:file:text-sky-400">
-            </div>
-            <button onclick="prosesUploadExcel()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md">
-                <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Unggah & Proses Data
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+            
+            <!-- Tombol Tutup X -->
+            <button onclick="tutupModalUpload()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 active:scale-90 transition-all">
+                <i class="fa-solid fa-xmark text-lg"></i>
             </button>
+
+            <!-- Judul -->
+            <h3 class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-4">Upload Master Excel Bosnet</h3>
+            
+            <!-- Area Drop-Zone / Klik Pilih File -->
+            <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 text-center cursor-pointer hover:border-sky-500 dark:hover:border-sky-400 transition-all bg-slate-50 dark:bg-slate-900/50 group" 
+                onclick="document.getElementById('fileBosnetInput').click()">
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-sky-500 dark:text-sky-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                <p class="text-xs text-slate-700 dark:text-slate-300 font-bold">Pilih File Export Bosnet (.xls / .xlsx / .ods)</p>
+                <p class="text-[10px] text-slate-400 mt-1">Klik atau seret file ke sini</p>
+            </div>
+
+            <!-- Input File Asli (Disembunyikan) -->
+            <input type="file" id="fileBosnetInput" class="hidden" accept=".xls,.xlsx,.ods" onchange="tampilkanNamaFileBosnet(this)">
+            
+            <!-- Daftar File Terpilih -->
+            <div id="file-list-bosnet" class="mt-3 space-y-1.5 text-xs text-slate-700 dark:text-slate-300"></div>
+
+            <!-- Tombol Proses -->
+            <div class="mt-6">
+                <button onclick="prosesUploadExcel()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Unggah & Proses Data</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -374,11 +406,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                 <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs transition-colors">
                     <span class="text-xs text-slate-600 dark:text-slate-400 font-bold">Versi Saat Ini</span>
-                    <span class="text-xs bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400 px-3 py-1 rounded-full font-black">v0.1.0 beta</span>
+                    <span id="app-version-about" class="text-xs bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400 px-3 py-1 rounded-full font-black">v0.1.0 beta</span>
                 </div>
                 <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs transition-colors">
                     <span class="text-xs text-slate-600 dark:text-slate-400 font-bold">Update Terakhir</span>
-                    <span class="text-xs text-slate-800 dark:text-slate-200 font-black">05 November 2026</span>
+                    <span id="app-update-date" class="text-xs text-slate-800 dark:text-slate-200 font-black">05 November 2026</span>
                 </div>
             </div>
 
@@ -511,10 +543,38 @@
     </nav>
 
     <script>
+        // --- KONFIGURASI VERSI APLIKASI CENTRAL ---
+        const APP_CONFIG = {
+            version: "v0.1.1",
+            status: "beta",
+            lastUpdate: "05 November 2026"
+        };
+
+        // Jalankan otomatis saat halaman selesai dimuat
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Set Header Versi
+            const elHeader = document.getElementById('app-version-header');
+            if (elHeader) {
+                elHeader.innerText = `[StOMo] ${APP_CONFIG.version}`;
+            }
+
+            // 2. Set Versi di Sub-Halaman Tentang
+            const elAbout = document.getElementById('app-version-about');
+            if (elAbout) {
+                elAbout.innerText = `${APP_CONFIG.version} ${APP_CONFIG.status}`;
+            }
+
+            // 3. Set Tanggal Update Terakhir
+            const elDate = document.getElementById('app-update-date');
+            if (elDate) {
+                elDate.innerText = APP_CONFIG.lastUpdate;
+            }
+        });
+
         let modalCallback = null;
 
         // Fungsi Pengganti customAlert() Bawaan Browser
-        function customcustomAlert(message, title = "INFORMASI") {
+        function customAlert(message, title = "INFORMASI") {
             const modal = document.getElementById('customModal');
             const titleEl = document.getElementById('modal-title');
             const msgEl = document.getElementById('modal-message');
@@ -673,13 +733,13 @@
             const role = document.getElementById('role-petugas').value;
 
             if(!user) {
-                customcustomAlert("Silakan masukkan Nama Petugas Cek Barang terlebih dahulu!");
+                customAlert("Silakan masukkan Nama Petugas Cek Barang terlebih dahulu!");
                 document.getElementById('user-petugas').focus();
                 return;
             }
 
             if(!role || role === "" || role.includes("PILIH")) {
-                customcustomAlert("Silakan pilih Asal Petugas terlebih dahulu (WH atau AUDIT)!");
+                customAlert("Silakan pilih Asal Petugas terlebih dahulu (WH atau AUDIT)!");
                 document.getElementById('role-petugas').focus();
                 return;
             }
@@ -698,11 +758,33 @@
             document.getElementById('userGreeting').innerHTML = `<i class="fa-solid fa-circle-user mr-1 text-emerald-400"></i> ${user} [${role || 'WH'}] - <b class="font-bold text-sky-200">${gudang}</b>`;
         }
 
+        // --- FUNGSI UPDATE TAMPILAN AREA & STATUS MASTER DATA ---
         function updateTampilanArea(gudang) {
             const areaElem = document.getElementById('display-area-opname');
-            if(areaElem) {
-                areaElem.innerHTML = `STOK OPNAME : <span class="text-sky-600 dark:text-sky-400">${gudang}</span>`;
+            if (!areaElem) return;
+
+            // Normalisasi nama gudang untuk pengecekan local storage
+            const gudangClean = String(gudang || '').trim().replace(/\s+/g, '_');
+            
+            // Cek apakah master data untuk gudang ini sudah ada di localStorage
+            const masterDataLokal = localStorage.getItem(`stomo_master_${gudangClean}`);
+            
+            let statusBadge = '';
+            
+            if (masterDataLokal) {
+                // Jika master data sudah diunduh (Aktif - Hijau)
+                statusBadge = `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 animate-pulse">
+                                   <span class="w-1.5 h-1.5 mr-1 bg-emerald-500 rounded-full"></span> STOK AKTIF
+                               </span>`;
+            } else {
+                // Jika master data belum diunduh / belum ada (Nonaktif - Merah)
+                statusBadge = `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-300 dark:border-rose-800">
+                                   <span class="w-1.5 h-1.5 mr-1 bg-rose-500 rounded-full"></span> BELUM DOWNLOAD
+                               </span>`;
             }
+
+            // Perbarui tampilan elemen HTML
+            areaElem.innerHTML = `STOK OPNAME : <span class="text-sky-600 dark:text-sky-400">${gudang}</span> ${statusBadge}`;
         }
 
         // Fungsi Logout dengan Custom Confirm Modal
@@ -819,195 +901,309 @@
         }
     };
 
-        // Modal Upload Excel Bosnet
+        // Fungsi Pengaman Tombol Upload Master Stok (FAB +)
         function bukaModalUpload() {
-            document.getElementById('uploadModal').classList.remove('hidden');
+            // Ambil data role langsung dari localStorage key 'stomo_role' yang disimpan saat login final
+            const userRole = localStorage.getItem('stomo_role') || '';
+
+            // Normalisasi teks ke huruf besar dan bersihkan spasi
+            const roleClean = String(userRole).trim().toUpperCase();
+
+            // Validasi: Pastikan role mengandung kata "WH" (misal: "WH")
+            if (!roleClean.includes('WH')) {
+                if (typeof customAlert === 'function') {
+                    customAlert("Akses Ditolak! Hanya petugas cek WH yang dapat membuka dan mengunggah master stok.");
+                } else {
+                    alert("Akses Ditolak! Hanya petugas cek WH yang dapat membuka dan mengunggah master stok.");
+                }
+                return; // Batalkan proses buka modal
+            }
+
+            // Jika petugas adalah WH, buka modal upload Excel Bosnet
+            const modalUpload = document.getElementById('uploadModal');
+            if (modalUpload) {
+                modalUpload.classList.remove('hidden');
+            }
         }
 
         function tutupModalUpload() {
             document.getElementById('uploadModal').classList.add('hidden');
         }
 
-        // --- PROSES UPLOAD & FILTER EXCEL BOSNET KE RTDB (master_data) ---
+        // Fungsi untuk menampilkan nama file yang dipilih ke antarmuka modal
+        function tampilkanNamaFileBosnet(input) {
+            const fileListContainer = document.getElementById('file-list-bosnet');
+            fileListContainer.innerHTML = '';
+            
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0];
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex items-center justify-between bg-sky-50 dark:bg-sky-950/50 px-3 py-2 rounded-xl border border-sky-100 dark:border-sky-900/40 text-[11px] font-semibold text-sky-700 dark:text-sky-300';
+                fileItem.innerHTML = `
+                    <span class="truncate max-w-[280px]"><i class="fa-solid fa-file-excel mr-2"></i>${file.name}</span>
+                    <span class="text-[10px] opacity-70">${(file.size / 1024).toFixed(1)} KB</span>
+                `;
+                fileListContainer.appendChild(fileItem);
+            }
+        }
+
+        // --- PROSES UPLOAD & FILTER EXCEL BOSNET MULTI-GUDANG KE RTDB ---
         function prosesUploadExcel() {
             const fileInput = document.getElementById('fileBosnetInput');
-            if(fileInput.files.length === 0) return customAlert("Silakan pilih file Excel Bosnet terlebih dahulu!");
-            
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                return customAlert("Silakan pilih file Excel Bosnet terlebih dahulu!");
+            }
+
             const file = fileInput.files[0];
             const reader = new FileReader();
-            const gudangAktif = localStorage.getItem('stomo_gudang') || 'DEFAULT';
-            const gudangClean = gudangAktif.replace(/\s+/g, '_');
 
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellText: true });
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // Ubah sheet ke format JSON (array of objects berdasarkan header baris pertama)
-                    const rawJson = XLSX.utils.sheet_to_json(worksheet);
 
-                    if(rawJson.length === 0) return customAlert("File Excel kosong atau format tidak dikenali!");
+                    // Konversi sheet ke format array baris (header: 1 untuk indeks numerik kolom)
+                    let rawJson = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
-                    // Filter data sesuai aturan:
-                    // 1. Verifikasi Lokasi (Kolom 'Lokasi') sesuai gudang aktif
-                    // 2. Kolom 'K Akhir' tidak boleh bernilai '0/0/0/0' (harus ada isinya)
-                    const filteredMaster = [];
+                    if (!rawJson || rawJson.length === 0) {
+                        return customAlert("File Excel kosong atau format tidak dikenali!");
+                    }
 
-                    rawJson.forEach(row => {
-                        // Ambil key secara fleksibel (Produk, Nama Produk/C, Lokasi/G, K Akhir/J)
-                        let kodeProd = row['Produk'] || Object.values(row)[1] || '';
-                        let namaProd = row['...2'] || row['C'] || Object.values(row)[2] || '';
-                        let lokasiGudang = row['Lokasi'] || row['...6'] || Object.values(row)[6] || '';
-                        let kAkhirVal = row['K Akhir'] || row['...9'] || Object.values(row)[9] || '0/0/0/0';
+                    // Objek penampung multi-gudang (Contoh: { "WH-1": { ... }, "WH-2": { ... } })
+                    const gudangGroupData = {};
+                    let totalItemValid = 0;
 
-                        // Validasi K Akhir (abaikan jika '0/0/0/0' atau kosong)
-                        if (!kAkhirVal || kAkhirVal === '0/0/0/0') return;
+                    // Lewati baris pertama (header tabel), mulai dari indeks 1 / baris ke-2
+                    for (let i = 1; i < rawJson.length; i++) {
+                        const row = rawJson[i];
+                        if (!row || row.length === 0) continue;
 
-                        // Pecah K Akhir untuk memastikan setidaknya ada satu angka > 0
+                        // Pemetaan indeks kolom dari struktur Excel Bosnet:
+                        // Indeks 1 (Kolom B) = Kode Produk
+                        // Indeks 2 (Kolom C) = Nama Produk
+                        // Indeks 6 (Kolom G) = Lokasi (Misal: WH-1, WH-2, dll)
+                        // Indeks 9 (Kolom J) = K Akhir (Format: 35/0/0/0)
+                        let kodeProd = String(row[1] || '').trim();
+                        let namaProd = String(row[2] || '').trim();
+                        let lokasiGudang = String(row[6] || '').trim();
+                        let kAkhirVal = String(row[9] || '0/0/0/0').trim();
+
+                        // Validasi: Jika kode produk kosong atau header terikut, lewati
+                        if (!kodeProd || kodeProd.toLowerCase() === 'produk' || kodeProd === 'No') continue;
+
+                        // Jika kolom lokasi kosong/tanda strip, gunakan label "UMUM" atau abaikan
+                        if (!lokasiGudang || lokasiGudang === '---') {
+                            lokasiGudang = 'UMUM';
+                        }
+
+                        // Validasi K Akhir: Abaikan jika '0/0/0/0' atau kosong
+                        if (!kAkhirVal || kAkhirVal === '0/0/0/0') continue;
+
+                        // Pecah string format '35/0/0/0' menjadi sub QTY (Krt / Ball / Rtg / Pcs)
                         let parts = kAkhirVal.split('/');
-                        let hasValue = parts.some(val => parseInt(val) > 0);
-                        if (!hasValue) return;
+                        let qtyKrt = parseInt(parts[0], 10) || 0;
+                        let qtyBall = parseInt(parts[1], 10) || 0;
+                        let qtyRtg = parseInt(parts[2], 10) || 0;
+                        let qtyPcs = parseInt(parts[3], 10) || 0;
 
-                        // Masukkan ke array master yang valid
-                        filteredMaster.push({
+                        // Pastikan total QTY > 0
+                        let totalQty = qtyKrt + qtyBall + qtyRtg + qtyPcs;
+                        if (totalQty <= 0) continue;
+
+                        // Normalisasi nama gudang untuk key Firebase (spasi diganti underscore)
+                        let gudangClean = lokasiGudang.replace(/\s+/g, '_');
+
+                        // Inisialisasi wadah objek gudang jika belum ada
+                        if (!gudangGroupData[gudangClean]) {
+                            gudangGroupData[gudangClean] = {
+                                namaAsli: lokasiGudang,
+                                items: {}
+                            };
+                        }
+
+                        // Buat key aman untuk Firebase (ganti karakter terlarang . # $ [ ] / dengan _)
+                        let safeKey = kodeProd.replace(/[.#$\[\]\/]/g, '_');
+
+                        // Masukkan data produk ke dalam kelompok gudangnya masing-masing
+                        gudangGroupData[gudangClean].items[safeKey] = {
                             KODE: kodeProd,
                             NAMA: namaProd,
                             LOKASI: lokasiGudang,
-                            K_AKHIR: kAkhirVal
-                        });
-                    });
+                            K_AKHIR: kAkhirVal,
+                            QTY_KRT: qtyKrt,
+                            QTY_BALL: qtyBall,
+                            QTY_RTG: qtyRtg,
+                            QTY_PCS: qtyPcs
+                        };
 
-                    if(filteredMaster.length === 0) {
-                        return customAlert("Tidak ada data valid yang ditemukan (semua K Akhir bernilai 0/0/0/0 atau lokasi tidak sesuai).");
+                        totalItemValid++;
                     }
 
-                    // Upload data yang sudah difilter ke Firebase RTDB: stok_opname/[id_gudang]/master_data
-                    firebase.database().ref(`stok_opname/${gudangClean}/master_data`).set(filteredMaster)
+                    console.log("Pengelompokan Data Multi-Gudang:", gudangGroupData);
+
+                    if (totalItemValid === 0) {
+                        return customAlert("Tidak ada data valid yang ditemukan (semua K Akhir bernilai 0/0/0/0 atau format kolom tidak sesuai).");
+                    }
+
+                    // Cek ketersediaan Firebase SDK
+                    if (typeof firebase === 'undefined' || !firebase.database) {
+                        customAlert("Koneksi Firebase tidak tersedia!");
+                        return;
+                    }
+
+                    // Proses unggah secara paralel ke masing-masing folder gudang di Firebase RTDB
+                    let uploadPromises = [];
+                    let daftarGudangBerhasil = [];
+
+                    Object.keys(gudangGroupData).forEach(gudangKey => {
+                        const infoGudang = gudangGroupData[gudangKey];
+                        const dbRef = firebase.database().ref(`stok_opname/${gudangKey}/master_data`);
+                        
+                        let promise = dbRef.set(infoGudang.items).then(() => {
+                            daftarGudangBerhasil.push(infoGudang.namaAsli);
+                            // Simpan juga salinan ke localStorage untuk gudang tersebut sebagai cache lokal
+                            localStorage.setItem(`stomo_master_${gudangKey}`, JSON.stringify(infoGudang.items));
+                        });
+                        uploadPromises.push(promise);
+                    });
+
+                    // Eksekusi semua upload
+                    Promise.all(uploadPromises)
                         .then(() => {
-                            customAlert(`Berhasil memproses dan mengunggah ${filteredMaster.length} item Master Data aktif ke server [Gudang: ${gudangAktif}]!`);
+                            customAlert(`Berhasil mengunggah total ${totalItemValid} item untuk gudang: ${daftarGudangBerhasil.join(', ')}!`);
                             tutupModalUpload();
-                            localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(filteredMaster));
                         })
                         .catch(err => {
-                            customAlert("Gagal mengunggah ke Firebase: " + err.message);
+                            console.error("Firebase Multi-Upload Error:", err);
+                            customAlert("Gagal mengunggah data ke server: " + err.message);
                         });
 
                 } catch (err) {
+                    console.error("Parsing Error:", err);
                     customAlert("Gagal membaca file Excel: " + err.message);
                 }
             };
+
             reader.readAsArrayBuffer(file);
         }
 
-        // --- 2. DOWNLOAD MASTER STOK DARI RTDB KE LOCALSTORAGE ---
+        // --- FUNGSI DOWNLOAD / TARIK MASTER STOK & SIMPAN KE PENYIMPANAN LOKAL ---
         function downloadMasterStok() {
-            if (!navigator.onLine) return customAlert("Koneksi internet tidak tersedia!");
-            const gudang = localStorage.getItem('stomo_gudang') || 'DEFAULT';
-            const gudangClean = gudang.replace(/\s+/g, '_');
-            const btn = document.getElementById('btn-download-master');
+            // 1. Ambil informasi sesi login petugas saat ini dari localStorage
+            const gudangAktif = localStorage.getItem('stomo_gudang') || '';
+            const namaPetugas = localStorage.getItem('stomo_user') || 'Tanpa Nama';
+            const asalPetugas = localStorage.getItem('stomo_role') || 'WH';
 
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengunduh...`;
+            // Validasi: Pastikan gudang sudah dipilih/terdeteksi
+            if (!gudangAktif || gudangAktif === "") {
+                if (typeof customAlert === 'function') {
+                    customAlert("Gudang aktif belum ditentukan. Silakan login ulang!");
+                } else {
+                    alert("Gudang aktif belum ditentukan. Silakan login ulang!");
+                }
+                return;
+            }
 
-            firebase.database().ref(`stok_opname/${gudangClean}/master_data`).once('value')
+            // Normalisasi nama gudang untuk path Firebase (spasi diganti underscore)
+            const gudangClean = gudangAktif.replace(/\s+/g, '_');
+
+            console.log(`Memulai unduh master stok untuk Gudang: ${gudangAktif} (Oleh: ${namaPetugas} [${asalPetugas}])`);
+
+            // Cek ketersediaan Firebase
+            if (typeof firebase === 'undefined' || !firebase.database) {
+                if (typeof customAlert === 'function') {
+                    customAlert("Koneksi Firebase tidak tersedia!");
+                }
+                return;
+            }
+
+            // Referensi path ke Firebase RTDB sesuai gudang aktif
+            const dbRef = firebase.database().ref(`stok_opname/${gudangClean}/master_data`);
+
+            if (typeof customAlert === 'function') {
+                customAlert(`Sedang mengunduh master stok untuk Gudang [${gudangAktif}]...`);
+            }
+
+            dbRef.once('value')
                 .then(snapshot => {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>Download Master</span>`;
+                    const dataMaster = snapshot.val();
 
-                    if (!snapshot.exists()) {
-                        return customAlert(`Belum ada data master di server untuk gudang ${gudang}. Silakan upload file Excel terlebih dahulu.`);
+                    if (!dataMaster) {
+                        if (typeof customAlert === 'function') {
+                            customAlert(`Master stok untuk gudang [${gudangAktif}] belum tersedia di server. Silakan unggah terlebih dahulu.`);
+                        }
+                        return;
                     }
 
-                    const masterData = snapshot.val();
-                    // Simpan ke localStorage agar bisa dipakai offline untuk autocomplete
-                    localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(masterData));
+                    // 2. Simpan master data ke localStorage agar bisa diakses halaman Cek, Lihat, dan Laporan
+                    localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(dataMaster));
                     
-                    const totalItem = Array.isArray(masterData) ? masterData.length : Object.keys(masterData).length;
-                    customAlert(`Berhasil mendownload ${totalItem} data master stok untuk ${gudang}! Siap digunakan untuk referensi.`);
+                    // Simpan juga info sinkronisasi terakhir
+                    localStorage.setItem(`stomo_sync_info`, JSON.stringify({
+                        gudang: gudangAktif,
+                        petugas: namaPetugas,
+                        asal: asalPetugas,
+                        waktu: new Date().toLocaleString()
+                    }));
+
+                    console.log("Master stok berhasil diunduh dan disinkronkan:", dataMaster);
+
+                    if (typeof customAlert === 'function') {
+                        customAlert(`Berhasil mengunduh Master Stok untuk Gudang [${gudangAktif}]! Data siap digunakan untuk saran kode barang dan crosscek.`);
+                    }
+
+                    // 3. Panggil fungsi penyegar atau inisialisasi autocompletenya (jika ada di halaman Cek)
+                    if (typeof initAutocompleteMaster === 'function') {
+                        initAutocompleteMaster(dataMaster);
+                    }
                 })
-                .catch(err => {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>Download Master</span>`;
-                    customAlert("Gagal mendownload data master: " + err.message);
+                .catch(error => {
+                    console.error("Gagal mengunduh master stok:", error);
+                    if (typeof customAlert === 'function') {
+                        customAlert("Gagal mengunduh master stok dari server: " + error.message);
+                    }
                 });
         }
 
-        // --- 1. INISIALISASI INDEXEDDB ---
+        // --- 1. INISIALISASI INDEXEDDB (Penyempurnaan untuk Hasil SO & Master Data) ---
         let db;
-        const requestDB = indexedDB.open("StOMoDB", 1);
+        const requestDB = indexedDB.open("StOMoDB", 2); // Naikkan versi database dari 1 ke 2
 
         requestDB.onupgradeneeded = function(e) {
             db = e.target.result;
+            
+            // Store 1: Untuk menyimpan hasil input cek fisik dari petugas
             if (!db.objectStoreNames.contains("hasil_so")) {
-                const store = db.createObjectStore("hasil_so", { keyPath: "id", autoIncrement: true });
-                store.createIndex("synced", "synced", { unique: false });
-                store.createIndex("gudang", "gudang", { unique: false });
+                const storeSO = db.createObjectStore("hasil_so", { keyPath: "id", autoIncrement: true });
+                storeSO.createIndex("synced", "synced", { unique: false });
+                storeSO.createIndex("gudang", "gudang", { unique: false });
+            }
+
+            // Store 2: Untuk menyimpan master data produk per gudang (Agar pencarian/saran kode barang cepat)
+            if (!db.objectStoreNames.contains("master_stok")) {
+                const storeMaster = db.createObjectStore("master_stok", { keyPath: "kode_gudang" }); // key gabungan misal "WH-2_CBR4A01"
+                storeMaster.createIndex("gudang", "gudang", { unique: false });
+                storeMaster.createIndex("kode", "kode", { unique: false });
             }
         };
 
         requestDB.onsuccess = function(e) {
             db = e.target.result;
-            updatePendingBadge();
+            console.log("IndexedDB berhasil dibuka.");
+            if (typeof updatePendingBadge === 'function') {
+                updatePendingBadge();
+            }
+            // Panggil muat riwayat saat DB sukses dibuka
+            if (typeof muatRiwayatInputTerbaru === 'function') {
+                muatRiwayatInputTerbaru();
+            }
         };
 
         requestDB.onerror = function(e) {
             console.error("Gagal membuka IndexedDB:", e.target.error);
         };
-
-        // --- 2. FUNGSI SIMPAN KE INDEXEDDB (LOKAL) ---
-        function simpanStokOpname() {
-            const gudang = localStorage.getItem('stomo_gudang') || '';
-            const user = localStorage.getItem('stomo_user') || '';
-            const role = localStorage.getItem('stomo_role') || '';
-            const lokasi = document.getElementById('input-lokasi-rak').value;
-            const kode = document.getElementById('input-kode').value.trim().toUpperCase();
-
-            if(!kode) return customAlert("Mohon masukkan Kode atau Nama Barang!");
-            if(!lokasi && !gudang.toUpperCase().includes('BLOK')) return customAlert("Mohon pilih Lokasi / Rak!");
-
-            // Susun objek data sesuai skema
-            let dataSO = {
-                gudang: gudang,
-                user_id: user,
-                nama_petugas: user,
-                role: role,
-                lokasi_rak: lokasi || '-',
-                kode_barang: kode,
-                timestamp: Date.now(),
-                synced: 0 // 0 = Belum Diupload, 1 = Sudah Diupload
-            };
-
-            if (gudang === 'WH-1' || gudang === 'WH-3') {
-                dataSO.qty_krt = parseInt(document.getElementById('input-qty-krt').value) || 0;
-                dataSO.qty_ball = parseInt(document.getElementById('input-qty-ball').value) || 0;
-                dataSO.qty_rtg = parseInt(document.getElementById('input-qty-rtg').value) || 0;
-            } else {
-                dataSO.qty_single = parseInt(document.getElementById('input-qty-single').value) || 0;
-            }
-
-            // Transaksi Simpan Ke IndexedDB
-            const tx = db.transaction(["hasil_so"], "readwrite");
-            const store = tx.objectStore("hasil_so");
-            store.add(dataSO);
-
-            tx.oncomplete = function() {
-                customAlert(`Berhasil disimpan ke Lokal [${gudang}]!\nKlik 'Upload Hasil Cek Fisik' untuk menyinkronkan ke server.`);
-                
-                // Reset form
-                document.getElementById('input-kode').value = '';
-                if (gudang === 'WH-1' || gudang === 'WH-3') {
-                    document.getElementById('input-qty-krt').value = '';
-                    document.getElementById('input-qty-ball').value = '';
-                    document.getElementById('input-qty-rtg').value = '';
-                } else {
-                    document.getElementById('input-qty-single').value = '';
-                }
-                document.getElementById('input-kode').focus();
-                updatePendingBadge();
-            };
-        }
 
         // --- 3. FUNGSI UPLOAD DARI INDEXEDDB KE FIREBASE RTDB ---
         function uploadKeFirebase() {
@@ -1156,26 +1352,42 @@
             const gudang = localStorage.getItem('stomo_gudang') || 'DEFAULT';
             const gudangClean = gudang.replace(/\s+/g, '_');
             
-            if(keyword.length < 2) {
-                dropdown.classList.add('hidden');
+            // Jika ketikan kurang dari 1 karakter, sembunyikan dropdown
+            if (!keyword || keyword.trim().length === 0) {
+                if (dropdown) dropdown.classList.add('hidden');
                 return;
             }
 
             const rawMaster = localStorage.getItem(`stomo_master_${gudangClean}`);
             if (!rawMaster) {
-                dropdown.innerHTML = `<div class="p-2.5 text-xs text-amber-600 font-bold">Master data belum didownload. Klik 'Download Master' di atas.</div>`;
-                dropdown.classList.remove('hidden');
+                if (dropdown) {
+                    dropdown.innerHTML = `<div class="p-2.5 text-xs text-amber-600 font-bold">Master data belum didownload. Klik 'Download Master Stok' di atas.</div>`;
+                    dropdown.classList.remove('hidden');
+                }
                 return;
             }
 
-            const masterData = JSON.parse(rawMaster);
-            const keywordUpper = keyword.toUpperCase();
+            let masterData;
+            try {
+                masterData = JSON.parse(rawMaster);
+            } catch (err) {
+                console.error("Gagal parsing master data:", err);
+                return;
+            }
+
+            // Ubah struktur data (jika berupa Objek key-value, ubah ke Array of Objects agar bisa di-filter)
+            let masterArray = Array.isArray(masterData) ? masterData : Object.values(masterData);
+
+            const keywordUpper = keyword.trim().toUpperCase();
             
-            // Filter data master (mencari kecocokan pada kode barang atau nama barang)
-            const hasilFilter = masterData.filter(item => {
-                let str = JSON.stringify(item).toUpperCase();
-                return str.includes(keywordUpper);
-            }).slice(0, 10); // Ambil maksimal 10 hasil teratas
+            // Filter data master (mencocokkan substring pada KODE atau NAMA barang)
+            const hasilFilter = masterArray.filter(item => {
+                let kode = String(item.KODE || item.Kode || item.CODE || '').toUpperCase();
+                let nama = String(item.NAMA || item.Nama || item.BARANG || '').toUpperCase();
+                
+                // Mengembalikan true jika kode ATAU nama mengandung kata kunci yang sedang diketik
+                return kode.includes(keywordUpper) || nama.includes(keywordUpper);
+            }).slice(0, 15); // Ambil maksimal 15 hasil teratas agar responsif
 
             if (hasilFilter.length === 0) {
                 dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Barang tidak ditemukan di master data.</div>`;
@@ -1185,12 +1397,14 @@
 
             let htmlContent = '';
             hasilFilter.forEach(item => {
-                // Sesuaikan key properti kolom dari excel Anda (misal: KODE, NAMA, BARANG, dll)
-                let kunciVal = item.KODE || item.Kode || item.CODE || Object.values(item)[0] || '';
-                let namaVal = item.NAMA || item.Nama || item.BARANG || Object.values(item)[1] || '';
+                let kunciVal = item.KODE || item.Kode || item.CODE || '';
+                let namaVal = item.NAMA || item.Nama || item.BARANG || '';
                 let displayText = `${kunciVal} - ${namaVal}`.toUpperCase();
 
-                htmlContent += `<div class="p-2.5 hover:bg-sky-50 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold border-b border-slate-100 dark:border-slate-700 uppercase" onclick="pilihBarangSaran('${displayText}')">${displayText}</div>`;
+                // Escape tanda kutip tunggal/ganda agar aman dimasukkan ke string onclick HTML
+                let safeText = displayText.replace(/'/g, "\\'");
+
+                htmlContent += `<div class="p-2.5 hover:bg-sky-50 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold border-b border-slate-100 dark:border-slate-700 uppercase" onclick="pilihBarangSaran('${safeText}')">${displayText}</div>`;
             });
 
             dropdown.innerHTML = htmlContent;
@@ -1198,8 +1412,14 @@
         }
 
         function pilihBarangSaran(val) {
-            document.getElementById('input-kode').value = val;
-            document.getElementById('saran-autocomplete').classList.add('hidden');
+            const inputKode = document.getElementById('input-kode');
+            if (inputKode) {
+                inputKode.value = val;
+            }
+            const dropdown = document.getElementById('saran-autocomplete');
+            if (dropdown) {
+                dropdown.classList.add('hidden');
+            }
         }
 
         // Fungsi untuk mengatur tampilan kolom Qty berdasarkan gudang aktif
@@ -1220,35 +1440,158 @@
             }
         }
 
+        // --- 2. FUNGSI SIMPAN KE INDEXEDDB (LOKAL) DENGAN RIWAYAT LIVE ---
         function simpanStokOpname() {
+            const gudang = localStorage.getItem('stomo_gudang') || '';
+            const user = localStorage.getItem('stomo_user') || '';
+            const role = localStorage.getItem('stomo_role') || '';
             const lokasi = document.getElementById('input-lokasi-rak').value;
             const kode = document.getElementById('input-kode').value.trim().toUpperCase();
-            const gudang = localStorage.getItem('stomo_gudang') || '';
-            
-            let qtyInfo = "";
-            if (gudang === 'WH-1' || gudang === 'WH-3') {
-                const krt = document.getElementById('input-qty-krt').value || '0';
-                const ball = document.getElementById('input-qty-ball').value || '0';
-                const rtg = document.getElementById('input-qty-rtg').value || '0';
-                qtyInfo = `KRT: ${krt}, BALL: ${ball}, RTG: ${rtg}`;
-            } else {
-                qtyInfo = `Qty: ${document.getElementById('input-qty-single').value || '0'}`;
+
+            if(!kode) {
+                if (typeof customAlert === 'function') customAlert("Mohon masukkan Kode atau Nama Barang!");
+                return;
+            }
+            if(!lokasi && !gudang.toUpperCase().includes('BLOK')) {
+                if (typeof customAlert === 'function') customAlert("Mohon pilih Lokasi / Rak!");
+                return;
             }
 
-            if(!kode) return customAlert("Mohon masukkan Kode atau Nama Barang!");
+            // Ambil nilai qty dan susun teks tampilannya berdasarkan jenis gudang
+            let qtyValText = "";
+            let qtyKrt = 0, qtyBall = 0, qtyRtg = 0, qtySingle = 0;
 
-            customAlert(`Berhasil Input Lapangan [${gudang}]:\nLokasi: ${lokasi}\nKode: ${kode}\n${qtyInfo}`);
-            
-            // Reset input form
-            document.getElementById('input-kode').value = '';
             if (gudang === 'WH-1' || gudang === 'WH-3') {
-                document.getElementById('input-qty-krt').value = '';
-                document.getElementById('input-qty-ball').value = '';
-                document.getElementById('input-qty-rtg').value = '';
+                qtyKrt = parseInt(document.getElementById('input-qty-krt').value) || 0;
+                qtyBall = parseInt(document.getElementById('input-qty-ball').value) || 0;
+                qtyRtg = parseInt(document.getElementById('input-qty-rtg').value) || 0;
+                qtyValText = `${qtyKrt}/${qtyBall}/${qtyRtg}`;
             } else {
-                document.getElementById('input-qty-single').value = '';
+                qtySingle = parseInt(document.getElementById('input-qty-single').value) || 0;
+                qtyValText = `${qtySingle}`;
             }
-            document.getElementById('input-kode').focus();
+
+            // Susun objek data sesuai skema database lokal
+            let dataSO = {
+                gudang: gudang,
+                user_id: user,
+                nama_petugas: user,
+                role: role,
+                lokasi_rak: lokasi || '-',
+                kode_barang: kode,
+                qty_teks: qtyValText,
+                timestamp: Date.now(),
+                synced: 0 // 0 = Belum Diupload, 1 = Sudah Diupload
+            };
+
+            if (gudang === 'WH-1' || gudang === 'WH-3') {
+                dataSO.qty_krt = qtyKrt;
+                dataSO.qty_ball = qtyBall;
+                dataSO.qty_rtg = qtyRtg;
+            } else {
+                dataSO.qty_single = qtySingle;
+            }
+
+            if (!db) {
+                console.error("Database IndexedDB belum siap.");
+                return;
+            }
+
+            // Proses Transaksi Simpan ke IndexedDB
+            const tx = db.transaction(["hasil_so"], "readwrite");
+            const store = tx.objectStore("hasil_so");
+            const request = store.add(dataSO);
+
+            request.onsuccess = function() {
+                console.log("Berhasil disimpan ke IndexedDB lokal.");
+            };
+
+            tx.oncomplete = function() {
+                // TANPA customAlert! Langsung bersihkan form input
+                document.getElementById('input-kode').value = '';
+                if (gudang === 'WH-1' || gudang === 'WH-3') {
+                    if(document.getElementById('input-qty-krt')) document.getElementById('input-qty-krt').value = '';
+                    if(document.getElementById('input-qty-ball')) document.getElementById('input-qty-ball').value = '';
+                    if(document.getElementById('input-qty-rtg')) document.getElementById('input-qty-rtg').value = '';
+                } else {
+                    if(document.getElementById('input-qty-single')) document.getElementById('input-qty-single').value = '';
+                }
+                
+                const inputKodeElem = document.getElementById('input-kode');
+                if (inputKodeElem) inputKodeElem.focus();
+                
+                if (typeof updatePendingBadge === 'function') {
+                    updatePendingBadge();
+                }
+
+                // Langsung muat dan perbarui tampilan riwayat input di bawah tombol
+                muatRiwayatInputTerbaru();
+            };
+
+            tx.onerror = function(e) {
+                console.error("Gagal menyimpan ke IndexedDB:", e.target.error);
+                if (typeof customAlert === 'function') customAlert("Gagal menyimpan data ke penyimpanan lokal.");
+            };
+        }
+
+        // --- FUNGSI RENDER 5 RIWAYAT INPUT TERAKHIR (TANPA NAMA BARANG, DENGAN SATUAN) ---
+        function muatRiwayatInputTerbaru() {
+            if (!db) return;
+
+            try {
+                const tx = db.transaction(["hasil_so"], "readonly");
+                const store = tx.objectStore("hasil_so");
+                const request = store.getAll();
+
+                request.onsuccess = function(e) {
+                    const semuaData = e.target.result || [];
+                    // Urutkan dari terbaru ke terlama (timestamp desc)
+                    semuaData.sort((a, b) => b.timestamp - a.timestamp);
+
+                    // Ambil maksimal 5 data teratas
+                    const dataTerbaru = semuaData.slice(0, 5);
+                    const container = document.getElementById('riwayat-input-container');
+                    if (!container) return;
+
+                    if (dataTerbaru.length === 0) {
+                        container.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400 font-medium">Belum ada riwayat input pada sesi ini.</div>`;
+                        return;
+                    }
+
+                    let html = '';
+                    dataTerbaru.forEach((item, index) => {
+                        const waktu = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        const nomorUrut = index + 1;
+                        
+                        // Efek transparan & blur HANYA diterapkan pada baris kelima (indeks ke-4)
+                        let opacityClass = 'opacity-100';
+                        let blurClass = '';
+                        if (index === 4) {
+                            opacityClass = 'opacity-30';
+                            blurClass = 'blur-[0.8px]';
+                        }
+
+                        // Format tampilan: KODE BARANG = QTY KRT (tanpa nama panjang)
+                        let tampilanQty = item.qty_teks || '0';
+                        // Tambahkan label KRT atau satuan jika belum ada di qty_teks
+                        let formatSatuan = !tampilanQty.includes('KRT') ? `${tampilanQty} KRT` : tampilanyny;
+
+                        html += `
+                            <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800 text-xs font-bold transition-all ${opacityClass} ${blurClass}">
+                                <div class="flex items-center gap-2 truncate">
+                                    <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded text-[10px] font-black">${nomorUrut}.</span>
+                                    <span class="text-slate-800 dark:text-slate-200 truncate uppercase">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400">${formatSatuan}</span></span>
+                                </div>
+                                <span class="text-[10px] font-semibold text-slate-400 tracking-wider">[${waktu}]</span>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                };
+            } catch (err) {
+                console.error("Gagal memuat riwayat:", err);
+            }
         }
 
         // Fungsi untuk Memuat & Menampilkan Daftar Hasil Cek di Halaman LIHAT
