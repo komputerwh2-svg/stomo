@@ -393,6 +393,64 @@
         </div>
     </div>
 
+    <!-- MODAL EDIT DATA SO (Silang Merah) -->
+    <div id="modalEditSO" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+            
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-sky-500"></i> Edit Hasil Cek Fisik
+                </h3>
+                <button onclick="tutupModalEditSO()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="edit-item-id">
+
+            <div class="space-y-3">
+                <!-- Info Lokasi Rak -->
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Lokasi Rak</label>
+                    <input type="text" id="edit-lokasi-rak" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs font-bold uppercase focus:border-sky-500 outline-none text-slate-800 dark:text-slate-200">
+                </div>
+
+                <!-- Info Kode Barang -->
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Kode / Nama Barang</label>
+                    <input type="text" id="edit-kode-barang" readonly class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl text-xs font-bold uppercase text-slate-500 cursor-not-allowed">
+                </div>
+
+                <!-- Qty Tunggal / Multi Kolom -->
+                <div id="edit-container-qty-single">
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">Jumlah Qty (PCS / Karton)</label>
+                    <input type="number" id="edit-qty-single" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none">
+                </div>
+
+                <div id="edit-container-qty-multi" class="grid grid-cols-3 gap-2 hidden">
+                    <div>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase ml-0.5">KRT</span>
+                        <input type="number" id="edit-qty-krt" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none text-center">
+                    </div>
+                    <div>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase ml-0.5">BALL</span>
+                        <input type="number" id="edit-qty-ball" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none text-center">
+                    </div>
+                    <div>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase ml-0.5">RTG</span>
+                        <input type="number" id="edit-qty-rtg" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 rounded-xl text-xs font-black text-sky-600 dark:text-sky-400 focus:border-sky-500 outline-none text-center">
+                    </div>
+                </div>
+
+                <!-- Tombol Simpan Perbaikan -->
+                <button onclick="simpanPerbaikanSO()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all mt-2">
+                    <i class="fa-solid fa-check-circle mr-1"></i> Simpan & Tandai Valid (Centang Hijau)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SUB-HALAMAN TENTANG APLIKASI (FULLSCREEN OVERLAY MENUTUPI NAVBAR) -->
     <div id="tentang-page" class="hidden fixed inset-0 z-[9999] bg-slate-50 dark:bg-slate-950 overflow-y-auto transition-colors duration-300">
         
@@ -910,6 +968,10 @@
             if (targetNav) targetNav.classList.add('active');
         }
 
+        if (tabId === 'lihat') {
+            muatDaftarHasilCek(); // Otomatis refresh judul dan daftar cek saat halaman Lihat dibuka
+        }
+
         if (!isBackAction) {
             window.history.pushState({ tab: tabId }, '', window.location.href);
         }
@@ -1112,7 +1174,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // --- FUNGSI DOWNLOAD / TARIK MASTER STOK SESUAI PATH GUDANG DAN TANGGAL AKTIF ---
+        // --- FUNGSI DOWNLOAD / TARIK MASTER STOK KE INDEXEDDB & PENANGANAN ERROR ---
         function downloadMasterStok() {
             // 1. Ambil informasi sesi login petugas saat ini dari localStorage
             const gudangAktif = localStorage.getItem('stomo_gudang') || '';
@@ -1129,7 +1191,7 @@
                 return;
             }
 
-            // 2. Generate string tanggal hari ini dengan format YYYY_MM_DD (sesuai format saat upload file)
+            // 2. Generate string tanggal hari ini dengan format YYYY_MM_DD
             const now = new Date();
             const YYYY = now.getFullYear();
             const MM = String(now.getMonth() + 1).padStart(2, '0');
@@ -1164,15 +1226,15 @@
                 baseFolder = gudangAktif.replace(/\s+/g, '_');
             }
 
-            // Susun path target RTDB lengkap dengan tanggal (Kecuali untuk stok_blok jika strukturnya berbeda, atau sesuaikan)
             let targetFirebasePath = "";
+            let fallbackFirebasePath = "";
             if (baseFolder === 'stok_blok') {
                 targetFirebasePath = 'stok_blok';
             } else {
                 targetFirebasePath = `stok_opname/${baseFolder}_${tanggalStr}/master_data`;
+                fallbackFirebasePath = `stok_opname/${baseFolder}/master_data`;
             }
 
-            // Referensi path ke Firebase RTDB
             const dbRef = firebase.database().ref(targetFirebasePath);
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
             const fullFolderId = `${gudangClean}_${tanggalStr}`;
@@ -1181,22 +1243,54 @@
                 customAlert(`Sedang mengunduh master stok Gudang [${gudangAktif}] untuk tanggal ${YYYY}-${MM}-${DD}...`);
             }
 
+            // Fungsi helper untuk menyimpan data master ke IndexedDB
+            function simpanMasterKeIndexedDB(dataMaster) {
+                if (!db) {
+                    console.error("Database IndexedDB belum siap.");
+                    return;
+                }
+
+                try {
+                    const tx = db.transaction(["master_stok"], "readwrite");
+                    const store = tx.objectStore("master_stok");
+
+                    // Simpan data master per item atau sebagai satu objek besar di object store master_stok
+                    // Disini kita simpan berdasarkan identifier gudang + tanggal dan cache aktifnya
+                    store.put({ kode_gudang: fullFolderId, gudang: gudangClean, data: dataMaster });
+                    store.put({ kode_gudang: gudangClean, gudang: gudangClean, data: dataMaster });
+
+                    tx.oncomplete = function() {
+                        console.log("Master stok berhasil disimpan ke IndexedDB.");
+                    };
+                } catch (err) {
+                    console.error("Gagal menyimpan ke IndexedDB:", err);
+                }
+            }
+
             dbRef.once('value')
                 .then(snapshot => {
-                    const dataMaster = snapshot.val();
+                    let dataMaster = snapshot.val();
 
+                    // Jika di path bertanggal kosong, coba cek fallback path tanpa tanggal
+                    if (!dataMaster && fallbackFirebasePath) {
+                        return firebase.database().ref(fallbackFirebasePath).once('value').then(fallbackSnap => {
+                            return fallbackSnap.val();
+                        });
+                    }
+                    return dataMaster;
+                })
+                .then(dataMaster => {
                     if (!dataMaster) {
                         if (typeof customAlert === 'function') {
-                            customAlert(`Master stok untuk gudang [${gudangAktif}] tanggal ${YYYY}-${MM}-${DD} belum tersedia di server (Path: ${targetFirebasePath}). Silakan unggah file Excel terlebih dahulu.`);
+                            customAlert(`Download data stok gagal atau belum ada data stok yang diupload untuk gudang [${gudangAktif}] tanggal ${YYYY}-${MM}-${DD}.`);
                         }
                         return;
                     }
 
-                    // 4. Simpan master data ke localStorage agar bisa diakses halaman Cek, Lihat, dan Laporan
-                    localStorage.setItem(`stomo_master_${fullFolderId}`, JSON.stringify(dataMaster));
-                    localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(dataMaster)); // Cache aktif
-                    
-                    // Simpan info sinkronisasi terakhir
+                    // 4. Simpan master data ke IndexedDB (Aman dari batasan kuota HP)
+                    simpanMasterKeIndexedDB(dataMaster);
+
+                    // Simpan info sinkronisasi ringan ke localStorage (hanya teks kecil, tidak membebani kuota)
                     localStorage.setItem(`stomo_sync_info`, JSON.stringify({
                         gudang: gudangAktif,
                         petugas: namaPetugas,
@@ -1204,9 +1298,9 @@
                         waktu: new Date().toLocaleString()
                     }));
 
-                    console.log(`Master stok berhasil diunduh dari path [${targetFirebasePath}]:`, dataMaster);
+                    console.log(`Master stok berhasil diunduh dan disimpan ke IndexedDB.`);
 
-                    // Segarkan tampilan badge status area agar otomatis berubah menjadi hijau (STOK AKTIF)
+                    // Segarkan tampilan badge status area
                     if (typeof updateTampilanArea === 'function') {
                         updateTampilanArea(gudangAktif);
                     }
@@ -1223,7 +1317,7 @@
                 .catch(error => {
                     console.error("Gagal mengunduh master stok:", error);
                     if (typeof customAlert === 'function') {
-                        customAlert("Gagal mengunduh master stok dari server: " + error.message);
+                        customAlert("Download data stok gagal: " + error.message);
                     }
                 });
         }
@@ -1266,86 +1360,119 @@
             console.error("Gagal membuka IndexedDB:", e.target.error);
         };
 
-        // --- 3. FUNGSI UPLOAD DARI INDEXEDDB KE FIREBASE RTDB (SESUAI FORMAT TANGGAL AKTIF) ---
+        // --- 3. FUNGSI UPLOAD DARI INDEXEDDB KE FIREBASE RTDB ---
         function uploadKeFirebase() {
             if (!navigator.onLine) return customAlert("Koneksi internet tidak tersedia!");
             if (!firebase.apps.length) return customAlert("Firebase belum diinisialisasi!");
 
             const btn = document.getElementById('btn-upload-sync-lihat');
             
-            // Validasi tambahan: Pastikan tombol sudah dalam status siap (semua tercentang hijau)
+            // Validasi: Pastikan tombol sudah dalam status siap (semua centang hijau)
             if (btn && btn.dataset.ready !== "true") {
                 return customAlert("Data tidak bisa diupload! Cek kembali data yang belum tercentang hijau atau belum benar.");
             }
 
-            const tx = db.transaction(["hasil_so"], "readwrite");
+            const gudangAktif = (localStorage.getItem('stomo_gudang') || '').trim();
+            const userAktif = (localStorage.getItem('stomo_user') || '').trim();
+
+            if (!gudangAktif || !userAktif) {
+                return customAlert("Sesi login tidak valid. Silakan login ulang!");
+            }
+
+            const tx = db.transaction(["hasil_so"], "readonly");
             const store = tx.objectStore("hasil_so");
-            const index = store.index("synced");
-            const request = index.getAll(0); // Ambil semua data yang synced = 0
+            const request = store.getAll();
 
             request.onsuccess = function() {
-                const pendingItems = request.result;
-                if (pendingItems.length === 0) return customAlert("Semua data cek fisik sudah tersinkronkan!");
+                const semuaData = request.result || [];
+                
+                // Filter data milik Gudang Aktif, User Aktif, dan yang sudah berstatus valid (centang hijau)
+                const pendingItems = semuaData.filter(item => {
+                    const samaGudang = String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase();
+                    const samaUser = String(item.user_id || item.nama_petugas || '').trim().toUpperCase() === userAktif.toUpperCase();
+                    const isValid = (item.status_validasi === 'valid');
+                    return samaGudang && samaUser && isValid;
+                });
+
+                if (pendingItems.length === 0) {
+                    return customAlert(`Tidak ada data valid untuk [${userAktif}] di gudang [${gudangAktif}] yang siap diunggah.`);
+                }
 
                 if (btn) {
                     btn.disabled = true;
                     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...`;
                 }
 
-                // Generate string tanggal hari ini dengan format YYYY_MM_DD (sesuai format folder master data)
+                // Format Tanggal Hari Ini (YYYY_MM_DD)
                 const now = new Date();
                 const YYYY = now.getFullYear();
                 const MM = String(now.getMonth() + 1).padStart(2, '0');
                 const DD = String(now.getDate()).padStart(2, '0');
                 const tanggalStr = `${YYYY}_${MM}_${DD}`;
 
-                let completed = 0;
+                const gudangClean = gudangAktif.replace(/\s+/g, '_');
+                const fullFolderId = `${gudangClean}_${tanggalStr}`;
+                const userClean = userAktif.replace(/\s+/g, '_');
+
+                // 1. Update info user aktif di RTDB
+                firebase.database().ref(`stok_opname/${fullFolderId}/user/${userClean}`).set({
+                    nama: userAktif,
+                    role: localStorage.getItem('stomo_role') || 'WH',
+                    last_active: Date.now()
+                });
+
+                let uploadPromises = [];
+                let itemsToUpdate = [];
 
                 pendingItems.forEach(item => {
-                    // Skema struktur RTDB: stok_opname/[id_gudang]_[tanggal]/
-                    const gudangClean = item.gudang.replace(/\s+/g, '_');
-                    const fullFolderId = `${gudangClean}_${tanggalStr}`;
-                    const userClean = item.user_id.replace(/\s+/g, '_');
+                    // Format Kunci Unik (ID): RAK_KODEBARANG_NAMAPETUGAS
+                    const rakClean = String(item.lokasi_rak || 'UMUM').trim().replace(/[\s.#$\[\]\/]/g, '_').toUpperCase();
+                    const kodeClean = String(item.kode_barang || 'BARANG').trim().replace(/[\s.#$\[\]\/]/g, '_').toUpperCase();
+                    const petugasClean = String(item.nama_petugas || userAktif).trim().replace(/[\s.#$\[\]\/]/g, '_').toUpperCase();
 
-                    // 1. Daftarkan/Update User di folder stok_opname/[id_gudang]_[tanggal]/user/[user_id]
-                    firebase.database().ref(`stok_opname/${fullFolderId}/user/${userClean}`).set({
-                        nama: item.nama_petugas,
-                        role: item.role,
-                        last_active: Date.now()
+                    const customKeyId = `${rakClean}_${kodeClean}_${petugasClean}`;
+                    const targetRef = firebase.database().ref(`stok_opname/${fullFolderId}/hasil_so/${customKeyId}`);
+
+                    const payload = { ...item, synced: 1 };
+                    delete payload.id; // Hapus ID auto-increment lokal IndexedDB
+
+                    let p = targetRef.set(payload).then(() => {
+                        itemsToUpdate.push(item);
                     });
 
-                    // 2. Simpan Data SO di folder stok_opname/[id_gudang]_[tanggal]/hasil_so
-                    const newRef = firebase.database().ref(`stok_opname/${fullFolderId}/hasil_so`).push();
-                    
-                    const payload = { ...item, synced: 1 };
-                    delete payload.id; // Hapus ID auto-increment IndexedDB
+                    uploadPromises.push(p);
+                });
 
-                    newRef.set(payload).then(() => {
-                        // Mark item as synced di IndexedDB
+                // Eksekusi semua upload ke Firebase RTDB
+                Promise.all(uploadPromises)
+                    .then(() => {
                         const updateTx = db.transaction(["hasil_so"], "readwrite");
                         const updateStore = updateTx.objectStore("hasil_so");
-                        item.synced = 1;
-                        updateStore.put(item);
 
-                        completed++;
-                        if (completed === pendingItems.length) {
+                        itemsToUpdate.forEach(uItem => {
+                            uItem.synced = 1;
+                            updateStore.put(uItem);
+                        });
+
+                        updateTx.oncomplete = function() {
                             if (btn) {
                                 btn.disabled = false;
                                 btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload Hasil Cek</span>`;
                             }
-                            customAlert(`Berhasil mengunggah ${completed} data ke Firebase RTDB (Folder: ${fullFolderId})!`);
+                            customAlert(`Berhasil mengunggah ${itemsToUpdate.length} data.`);
+                            
                             if (typeof updatePendingBadge === 'function') updatePendingBadge();
                             if (typeof muatDaftarHasilCek === 'function') muatDaftarHasilCek();
-                        }
-                    }).catch(err => {
-                        console.error("Gagal Upload:", err);
+                        };
+                    })
+                    .catch(err => {
+                        console.error("Gagal Upload ke Firebase:", err);
                         if (btn) {
                             btn.disabled = false;
                             btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload Hasil Cek</span>`;
                         }
                         customAlert("Gagal mengunggah data: " + err.message);
                     });
-                });
             };
         }
 
@@ -1633,11 +1760,12 @@
             };
         }
 
-        // --- FUNGSI RENDER 5 RIWAYAT INPUT TERAKHIR (DENGAN INFO LOKASI RAK & SATUAN) ---
+        // --- FUNGSI RENDER 5 RIWAYAT INPUT TERAKHIR (KHUSUS USER LOGIN) ---
         function muatRiwayatInputTerbaru() {
             if (!db) return;
 
             const gudangAktif = localStorage.getItem('stomo_gudang') || '';
+            const userAktif = localStorage.getItem('stomo_user') || localStorage.getItem('stomo_nama') || '';
 
             try {
                 const tx = db.transaction(["hasil_so"], "readonly");
@@ -1647,14 +1775,16 @@
                 request.onsuccess = function(e) {
                     const semuaData = e.target.result || [];
                     
-                    // Filter data berdasarkan gudang aktif
-                    const dataGudangAktif = semuaData.filter(item => {
-                        return String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase();
+                    // Filter data berdasarkan GUDANG AKTIF dan USER AKTIF
+                    const dataUserAktif = semuaData.filter(item => {
+                        const samaGudang = String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase();
+                        const samaUser = String(item.user_id || item.nama_petugas || '').trim().toUpperCase() === userAktif.toUpperCase();
+                        return samaGudang && samaUser;
                     });
 
                     // 1. Urutkan dari terlama ke terbaru untuk penomoran kronologis asli
-                    dataGudangAktif.sort((a, b) => a.timestamp - b.timestamp);
-                    const dataDenganNomor = dataGudangAktif.map((item, idx) => ({
+                    dataUserAktif.sort((a, b) => a.timestamp - b.timestamp);
+                    const dataDenganNomor = dataUserAktif.map((item, idx) => ({
                         ...item,
                         nomorUrutAsli: idx + 1
                     }));
@@ -1668,7 +1798,7 @@
                     if (!container) return;
 
                     if (dataTerbaru.length === 0) {
-                        container.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400 font-medium">Belum ada riwayat input untuk gudang [${gudangAktif}] pada sesi ini.</div>`;
+                        container.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400 font-medium">Belum ada riwayat input untuk [${userAktif}] di gudang [${gudangAktif}].</div>`;
                         return;
                     }
 
@@ -1676,7 +1806,6 @@
                     dataTerbaru.forEach((item, index) => {
                         const waktu = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                         
-                        // Efek transparan & blur HANYA diterapkan pada baris kelima (indeks ke-4)
                         let opacityClass = 'opacity-100';
                         let blurClass = '';
                         if (index === 4) {
@@ -1714,10 +1843,10 @@
             const userAktif = localStorage.getItem('stomo_user') || localStorage.getItem('stomo_nama') || 'ABIB';
             const roleAktif = localStorage.getItem('stomo_role') || 'Petugas Cek WH';
 
-            // 1. Update Judul Dinamis sesuai login aktif
+            // 1. Update Judul Dinamis
             const judulElem = document.getElementById('judul-hasil-cek');
             if (judulElem) {
-                judulElem.textContent = `HASIL CEK [ ${userAktif.toUpperCase()} - ${roleAktif.toUpperCase()} ]`;
+                judulElem.innerHTML = `<i class="fa-solid fa-circle-user mr-1 text-emerald-500"></i> ${userAktif.toUpperCase()} [${roleAktif.toUpperCase()}] - <b class="font-bold text-sky-600 dark:text-sky-300">${gudangAktif.toUpperCase()}</b>`;
             }
 
             try {
@@ -1728,17 +1857,17 @@
                 request.onsuccess = function(e) {
                     const semuaData = e.target.result || [];
                     
-                    // Filter data berdasarkan gudang aktif
-                    const dataGudang = semuaData.filter(item => {
-                        return String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase();
+                    const dataUser = semuaData.filter(item => {
+                        const samaGudang = String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase();
+                        const samaUser = String(item.user_id || item.nama_petugas || '').trim().toUpperCase() === userAktif.toUpperCase();
+                        return samaGudang && samaUser;
                     });
 
-                    // 2. Ambil daftar rak unik dari data riwayat input lokal untuk dropdown filter
                     const filterRakSelect = document.getElementById('filter-rak-lihat');
                     const selectedRak = filterRakSelect ? filterRakSelect.value : '';
                     
                     if (filterRakSelect) {
-                        let rakUnik = [...new Set(dataGudang.map(item => item.lokasi_rak ? item.lokasi_rak.trim().toUpperCase() : '-'))].sort();
+                        let rakUnik = [...new Set(dataUser.map(item => item.lokasi_rak ? item.lokasi_rak.trim().toUpperCase() : '-'))].sort();
                         
                         filterRakSelect.innerHTML = '<option value="">-- SEMUA RAK --</option>';
                         rakUnik.forEach(rak => {
@@ -1752,18 +1881,15 @@
                         });
                     }
 
-                    // Filter lagi berdasarkan rak yang dipilih di dropdown (jika ada)
-                    const dataFiltered = selectedRak ? dataGudang.filter(item => (item.lokasi_rak || '-').toUpperCase() === selectedRak.toUpperCase()) : dataGudang;
-
-                    // Urutkan berdasarkan waktu
+                    const dataFiltered = selectedRak ? dataUser.filter(item => (item.lokasi_rak || '-').toUpperCase() === selectedRak.toUpperCase()) : dataUser;
                     dataFiltered.sort((a, b) => a.timestamp - b.timestamp);
 
                     const container = document.getElementById('list-hasil-cek');
                     if (!container) return;
 
                     if (dataFiltered.length === 0) {
-                        container.innerHTML = `<div class="text-center py-10 text-slate-400 dark:text-slate-600 text-[11px] italic">Belum ada data opname untuk gudang [${gudangAktif}] ${selectedRak ? 'pada ' + selectedRak : ''}.</div>`;
-                        cekStatusSemuaValid(dataGudang); // Evaluasi tombol upload
+                        container.innerHTML = `<div class="text-center py-10 text-slate-400 dark:text-slate-600 text-[11px] italic">Belum ada data opname untuk [${userAktif}] di gudang [${gudangAktif}] ${selectedRak ? 'pada ' + selectedRak : ''}.</div>`;
+                        cekStatusSemuaValid(dataUser);
                         return;
                     }
 
@@ -1773,6 +1899,7 @@
                         const nomorUrut = index + 1;
                         const formatSatuan = item.qty_teks || '0';
                         const statusValid = item.status_validasi || 'pending';
+                        const primaryKey = item.id || item.timestamp;
 
                         let borderStyle = statusValid === 'valid' 
                             ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20' 
@@ -1780,23 +1907,24 @@
 
                         html += `
                             <div class="flex items-center justify-between px-3 py-2.5 rounded-xl border ${borderStyle} text-xs font-bold transition-all">
-                                <div class="flex items-center gap-2.5 truncate">
+                                <!-- Klik pada area teks baris untuk membuka modal edit -->
+                                <div onclick="bukaModalEditSO(${primaryKey})" class="flex items-center gap-2.5 truncate flex-grow cursor-pointer" title="Klik baris untuk edit data">
                                     <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-2 py-0.5 rounded text-[10px] font-black">${nomorUrut}.</span>
                                     <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-black">[${item.lokasi_rak || '-'}]</span>
                                     <span class="text-slate-800 dark:text-slate-200 truncate uppercase">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400">${formatSatuan}</span></span>
                                 </div>
-                                <div class="flex items-center gap-1.5">
-                                    <!-- Tombol Centang Hijau (Valid / Kunci Data) -->
-                                    <button onclick="ubahStatusValidasi(${item.id || item.timestamp}, 'valid')" 
+                                <div class="flex items-center gap-1.5 ml-2">
+                                    <!-- Tombol Centang Hijau (Valid) -->
+                                    <button onclick="ubahStatusValidasi(${primaryKey}, 'valid')" 
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'valid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600'}" 
                                         title="Tandai Sama / Kunci Data">
                                         <i class="fa-solid fa-check text-xs"></i>
                                     </button>
                                     
-                                    <!-- Tombol Silang Merah (Tidak Sama / Perlu Cek Ulang & Edit) -->
-                                    <button onclick="ubahStatusValidasi(${item.id || item.timestamp}, 'invalid')" 
+                                    <!-- Tombol Silang Merah (Hanya sebagai tanda berbeda, tidak membuka modal) -->
+                                    <button onclick="ubahStatusValidasi(${primaryKey}, 'invalid')" 
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'invalid' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-rose-100 hover:text-rose-600'}" 
-                                        title="Tandai Berbeda / Edit Ulang">
+                                        title="Tandai Berbeda">
                                         <i class="fa-solid fa-xmark text-xs"></i>
                                     </button>
                                 </div>
@@ -1805,23 +1933,20 @@
                     });
 
                     container.innerHTML = html;
-                    
-                    // Evaluasi tombol upload global
-                    cekStatusSemuaValid(dataGudang);
+                    cekStatusSemuaValid(dataUser);
                 };
             } catch (err) {
                 console.error("Gagal memuat daftar hasil cek:", err);
             }
         }
 
-        // Fungsi mengubah status validasi (Hijau / Merah) di IndexedDB
+        // --- 2. UBAH STATUS VALIDASI (Murni ganti status tanpa buka modal) ---
         function ubahStatusValidasi(primaryKey, statusBaru) {
             if (!db) return;
 
             const tx = db.transaction(["hasil_so"], "readwrite");
             const store = tx.objectStore("hasil_so");
             
-            // Ambil data berdasarkan key atau iterasi kursor/getAll
             const request = store.getAll();
             request.onsuccess = function(e) {
                 const semuaData = e.target.result || [];
@@ -1834,7 +1959,111 @@
             };
 
             tx.oncomplete = function() {
-                muatDaftarHasilCek(); // Segarkan tampilan
+                muatDaftarHasilCek();
+            };
+        }
+
+        // --- 2. FUNGSI MEMBUKA MODAL EDIT DATA SO ---
+        function bukaModalEditSO(primaryKey) {
+            if (!db) return;
+
+            const tx = db.transaction(["hasil_so"], "readonly");
+            const store = tx.objectStore("hasil_so");
+            const request = store.getAll();
+
+            request.onsuccess = function(e) {
+                const semuaData = e.target.result || [];
+                const item = semuaData.find(d => (d.id === primaryKey || d.timestamp === primaryKey));
+
+                if (!item) return;
+
+                document.getElementById('edit-item-id').value = item.id || item.timestamp;
+                document.getElementById('edit-lokasi-rak').value = item.lokasi_rak || '-';
+                document.getElementById('edit-kode-barang').value = item.kode_barang || '';
+
+                const gudang = (item.gudang || '').toUpperCase();
+
+                // Atur Tampilan Kolom Qty (Multi Kolom vs Tunggal)
+                const cSingle = document.getElementById('edit-container-qty-single');
+                const cMulti = document.getElementById('edit-container-qty-multi');
+
+                if (gudang === 'WH-1' || gudang === 'WH-3') {
+                    if (cSingle) cSingle.classList.add('hidden');
+                    if (cMulti) cMulti.classList.remove('hidden');
+
+                    document.getElementById('edit-qty-krt').value = item.qty_krt || 0;
+                    document.getElementById('edit-qty-ball').value = item.qty_ball || 0;
+                    document.getElementById('edit-qty-rtg').value = item.qty_rtg || 0;
+                } else {
+                    if (cSingle) cSingle.classList.remove('hidden');
+                    if (cMulti) cMulti.classList.add('hidden');
+
+                    document.getElementById('edit-qty-single').value = item.qty_single || 0;
+                }
+
+                document.getElementById('modalEditSO').classList.remove('hidden');
+            };
+        }
+
+        function tutupModalEditSO() {
+            document.getElementById('modalEditSO').classList.add('hidden');
+        }
+
+        // --- 3. PROSES SIMPAN PERBAIKAN & OTOMATIS TANDAI CENTANG HIJAU ---
+        function simpanPerbaikanSO() {
+            if (!db) return;
+
+            const itemId = parseInt(document.getElementById('edit-item-id').value, 10);
+            const rakBaru = document.getElementById('edit-lokasi-rak').value.trim().toUpperCase() || '-';
+
+            const tx = db.transaction(["hasil_so"], "readwrite");
+            const store = tx.objectStore("hasil_so");
+            const request = store.getAll();
+
+            request.onsuccess = function(e) {
+                const semuaData = e.target.result || [];
+                const item = semuaData.find(d => (d.id === itemId || d.timestamp === itemId));
+
+                if (!item) return;
+
+                const gudang = (item.gudang || '').toUpperCase();
+                let qtyValText = "";
+
+                if (gudang === 'WH-1' || gudang === 'WH-3') {
+                    const qtyKrt = parseInt(document.getElementById('edit-qty-krt').value, 10) || 0;
+                    const qtyBall = parseInt(document.getElementById('edit-qty-ball').value, 10) || 0;
+                    const qtyRtg = parseInt(document.getElementById('edit-qty-rtg').value, 10) || 0;
+
+                    item.qty_krt = qtyKrt;
+                    item.qty_ball = qtyBall;
+                    item.qty_rtg = qtyRtg;
+
+                    let arrQty = [];
+                    if (qtyKrt > 0) arrQty.push(`${qtyKrt} KRT`);
+                    if (qtyBall > 0) arrQty.push(`${qtyBall} BALL`);
+                    if (qtyRtg > 0) arrQty.push(`${qtyRtg} RTG`);
+
+                    qtyValText = arrQty.length > 0 ? arrQty.join(' / ') : '0 KRT';
+                } else {
+                    const qtySingle = parseInt(document.getElementById('edit-qty-single').value, 10) || 0;
+                    item.qty_single = qtySingle;
+                    qtyValText = `${qtySingle} QTY`;
+                }
+
+                item.lokasi_rak = rakBaru;
+                item.qty_teks = qtyValText;
+                item.status_validasi = 'valid'; // Otomatis centang hijau
+                item.synced = 0; // Reset sync agar terbaca saat upload
+
+                store.put(item);
+            };
+
+            tx.oncomplete = function() {
+                tutupModalEditSO();
+                if (typeof customAlert === 'function') {
+                    customAlert("Data berhasil diperbaiki dan langsung ditandai Valid!");
+                }
+                muatDaftarHasilCek();
             };
         }
 
