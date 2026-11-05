@@ -720,78 +720,104 @@
             document.getElementById('input-lokasi').focus();
         }
 
-        // --- MANAJEMEN TAB & TOMBOL KEMBALI FISIK (NATIVE-LIKE) ---
+        /**
+     * PENGELOLAAN TOMBOL KEMBALI HP (DOUBLE-TAP BACK TO EXIT) - STOMO
+     */
+    let backPressedOnce = false;
+    let exitToastTimer = null;
+    let currentStomoTab = 'cek'; // Default tab awal StOMo
 
-        // 1. Fungsi Switch Tab (Sudah Diintegrasikan dengan History API)
-        function switchTab(tabId, el, isBackAction = false) {
-            // Hilangkan status aktif dari semua section dan navigasi bawah
-            document.querySelectorAll('.content-section').forEach(s => {
-                s.classList.remove('active');
-                s.classList.add('hidden'); // Menjamin kekedapan tampilan
-            });
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    // Inisialisasi push state awal saat aplikasi dimuat
+    window.history.pushState({ page: 'main' }, '', window.location.href);
 
-            // Tampilkan section tab yang dipilih
-            const targetContent = document.getElementById(tabId + '-content');
-            if (targetContent) {
-                targetContent.classList.remove('hidden');
-                targetContent.classList.add('active');
-            }
+    window.addEventListener('popstate', function (event) {
+        // 1. Cek jika ada Modal atau Sub-Halaman (seperti Tentang Aplikasi atau Login) yang sedang terbuka
+        const tentangPage = document.getElementById('tentang-page');
+        const customModal = document.getElementById('customModal');
+        const pwaModal = document.getElementById('pwaInstallModal');
+        const loginModal = document.getElementById('loginModal');
 
-            // Aktifkan icon navigasi bawah yang sesuai
-            if (el) {
-                el.classList.add('active');
-            } else {
-                // Fallback pencarian elemen tombol nav jika dipicu oleh tombol back
-                const targetNav = document.querySelector(`.nav-item[onclick*="${tabId}"]`);
-                if (targetNav) targetNav.classList.add('active');
-            }
+        let adaModalDitutup = false;
 
-            // Jika dipindah oleh klik pengguna (bukan tombol back), catat ke history browser
-            if (!isBackAction) {
-                history.pushState({ tab: tabId }, "", "");
-            }
+        if (tentangPage && !tentangPage.classList.contains('hidden')) {
+            tentangPage.classList.add('hidden');
+            adaModalDitutup = true;
+        }
+        if (customModal && !customModal.classList.contains('hidden')) {
+            customModal.classList.add('hidden');
+            adaModalDitutup = true;
+        }
+        if (pwaModal && !pwaModal.classList.contains('hidden')) {
+            pwaModal.classList.add('hidden');
+            adaModalDitutup = true;
         }
 
-        // 2. Fungsi Buka Sub-Halaman Fullscreen (Tentang Aplikasi, dll)
-        function openSubPage(pageId) {
-            const page = document.getElementById(pageId);
-            if (page) {
-                page.classList.remove('hidden');
-                // Catat state sub-halaman ke history
-                history.pushState({ page: pageId }, "", "");
-            }
+        // Jika ada modal yang ditutup, tahan history agar tidak keluar aplikasi
+        if (adaModalDitutup) {
+            window.history.pushState({ page: 'app' }, '', window.location.href);
+            return;
         }
 
-        // 3. Fungsi Tutup Sub-Halaman Manual (Tombol Panah Kembali)
-        function closeSubPage(pageId) {
-            const page = document.getElementById(pageId);
-            if (page) {
-                page.classList.add('hidden');
-                // Sinkronkan dengan history browser jika state saat ini adalah sub-page tersebut
-                if (history.state && history.state.page === pageId) {
-                    history.back();
-                }
-            }
+        // 2. Jika pengguna sedang berada di tab selain tab 'cek' (misal: Lihat, Laporan, Setelan)
+        if (typeof currentStomoTab !== 'undefined' && currentStomoTab !== 'cek') {
+            switchTab('cek', document.querySelector('.nav-item')); // Pindah kembali ke tab cek
+            currentStomoTab = 'cek';
+            window.history.pushState({ page: 'cek' }, '', window.location.href);
+            return;
         }
 
-        // 4. PENGAMAN UTAMA: Event Listener Tombol Kembali Fisik HP
-        window.addEventListener('popstate', function(event) {
-            // A. Cek jika Sub-Halaman "tentang-page" sedang terbuka
-            const tentangPage = document.getElementById('tentang-page');
-            if (tentangPage && !tentangPage.classList.contains('hidden')) {
-                tentangPage.classList.add('hidden');
-                return; // Berhenti di sini, cegah keluar aplikasi
-            }
+        // 3. Jika sudah berada di Tab Cek (Halaman Utama Lapangan)
+        if (backPressedOnce) {
+            // Jika ditekan kedua kalinya dalam rentang < 2 detik, biarkan aplikasi tertutup/keluar
+            return; 
+        }
 
-            // B. Jika pengguna berpindah tab utama
-            if (event.state && event.state.tab) {
-                switchTab(event.state.tab, null, true);
-            } else {
-                // Jika history awal/kosong, kembalikan ke tab utama default (Tab 'cek')
-                switchTab('cek', null, true);
-            }
+        // Tekanan pertama di Tab Cek: Tahan history & munculkan Toast Peringatan
+        window.history.pushState({ page: 'main' }, '', window.location.href);
+        backPressedOnce = true;
+        
+        // Berikan peringatan menggunakan custom alert / notifikasi kecil khas StOMo
+        if (typeof customAlert === 'function') {
+            // Atau tampilkan pesan toast jika ada
+            console.log("Tekan sekali lagi untuk keluar dari aplikasi StOMo.");
+        }
+
+        // Reset status double-tap setelah 2 detik
+        clearTimeout(exitToastTimer);
+        exitToastTimer = setTimeout(() => {
+            backPressedOnce = false;
+        }, 2000);
+    });
+
+    // Modifikasi fungsi switchTab Anda agar memperbarui variabel 'currentStomoTab'
+    const originalSwitchTab = window.switchTab || function(){};
+    window.switchTab = function(tabId, el, isBackAction = false) {
+        currentStomoTab = tabId; // Simpan state tab aktif
+        
+        // Jalankan fungsi transisi tab bawaan Anda
+        document.querySelectorAll('.content-section').forEach(s => {
+            s.classList.remove('active');
+            s.classList.add('hidden');
         });
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+        const targetContent = document.getElementById(tabId + '-content');
+        if (targetContent) {
+            targetContent.classList.remove('hidden');
+            targetContent.classList.add('active');
+        }
+
+        if (el) {
+            el.classList.add('active');
+        } else {
+            const targetNav = document.querySelector(`.nav-item[onclick*="${tabId}"]`);
+            if (targetNav) targetNav.classList.add('active');
+        }
+
+        if (!isBackAction) {
+            window.history.pushState({ tab: tabId }, '', window.location.href);
+        }
+    };
 
         // Modal Upload Excel Bosnet
         function bukaModalUpload() {
