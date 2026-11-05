@@ -558,43 +558,6 @@
             modalCallback = null;
         }
 
-        // --- PENGELOLA TOMBOL KEMBALI FISIK HP (NATIVE-LIKE BACK BUTTON) ---
-
-        // 1. Saat sub-halaman (misal: Tentang Aplikasi) dibuka, masukkan state ke history browser
-        function openSubPage(pageId) {
-            const page = document.getElementById(pageId);
-            if (page) {
-                page.classList.remove('hidden');
-                // Dorong history state baru agar tombol back fisik mengenali halaman ini terbuka
-                history.pushState({ page: pageId }, "", "");
-            }
-        }
-
-        // 2. Saat sub-halaman ditutup secara manual (klik tombol panah kembali)
-        function closeSubPage(pageId) {
-            const page = document.getElementById(pageId);
-            if (page) {
-                page.classList.add('hidden');
-                // Jika history saat ini sesuai, panggil history.back() agar sinkron
-                if (history.state && history.state.page === pageId) {
-                    history.back();
-                }
-            }
-        }
-
-        // 3. Tangkap event ketika tombol kembali fisik ditekan oleh pengguna
-        window.addEventListener('popstate', function(event) {
-            // Cek apakah sub-halaman "tentang-page" sedang terbuka
-            const tentangPage = document.getElementById('tentang-page');
-            
-            if (tentangPage && !tentangPage.classList.contains('hidden')) {
-                // Jika terbuka, tutup sub-halamannya saja dan cegah keluar aplikasi
-                tentangPage.classList.add('hidden');
-            } else {
-                // Jika di halaman utama, biarkan aksi default (atau tambahkan konfirmasi keluar jika perlu)
-            }
-        });
-
         let deferredPrompt = null;
 
         // Tangkap event pemicu instalasi PWA dari browser
@@ -757,13 +720,78 @@
             document.getElementById('input-lokasi').focus();
         }
 
-        // Fungsi Tab Switching (Cek, Lihat, Laporan, Setelan)
-        function switchTab(tabId, el) {
-            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        // --- MANAJEMEN TAB & TOMBOL KEMBALI FISIK (NATIVE-LIKE) ---
+
+        // 1. Fungsi Switch Tab (Sudah Diintegrasikan dengan History API)
+        function switchTab(tabId, el, isBackAction = false) {
+            // Hilangkan status aktif dari semua section dan navigasi bawah
+            document.querySelectorAll('.content-section').forEach(s => {
+                s.classList.remove('active');
+                s.classList.add('hidden'); // Menjamin kekedapan tampilan
+            });
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(tabId + '-content').classList.add('active');
-            if (el) el.classList.add('active');
+
+            // Tampilkan section tab yang dipilih
+            const targetContent = document.getElementById(tabId + '-content');
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+                targetContent.classList.add('active');
+            }
+
+            // Aktifkan icon navigasi bawah yang sesuai
+            if (el) {
+                el.classList.add('active');
+            } else {
+                // Fallback pencarian elemen tombol nav jika dipicu oleh tombol back
+                const targetNav = document.querySelector(`.nav-item[onclick*="${tabId}"]`);
+                if (targetNav) targetNav.classList.add('active');
+            }
+
+            // Jika dipindah oleh klik pengguna (bukan tombol back), catat ke history browser
+            if (!isBackAction) {
+                history.pushState({ tab: tabId }, "", "");
+            }
         }
+
+        // 2. Fungsi Buka Sub-Halaman Fullscreen (Tentang Aplikasi, dll)
+        function openSubPage(pageId) {
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.remove('hidden');
+                // Catat state sub-halaman ke history
+                history.pushState({ page: pageId }, "", "");
+            }
+        }
+
+        // 3. Fungsi Tutup Sub-Halaman Manual (Tombol Panah Kembali)
+        function closeSubPage(pageId) {
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('hidden');
+                // Sinkronkan dengan history browser jika state saat ini adalah sub-page tersebut
+                if (history.state && history.state.page === pageId) {
+                    history.back();
+                }
+            }
+        }
+
+        // 4. PENGAMAN UTAMA: Event Listener Tombol Kembali Fisik HP
+        window.addEventListener('popstate', function(event) {
+            // A. Cek jika Sub-Halaman "tentang-page" sedang terbuka
+            const tentangPage = document.getElementById('tentang-page');
+            if (tentangPage && !tentangPage.classList.contains('hidden')) {
+                tentangPage.classList.add('hidden');
+                return; // Berhenti di sini, cegah keluar aplikasi
+            }
+
+            // B. Jika pengguna berpindah tab utama
+            if (event.state && event.state.tab) {
+                switchTab(event.state.tab, null, true);
+            } else {
+                // Jika history awal/kosong, kembalikan ke tab utama default (Tab 'cek')
+                switchTab('cek', null, true);
+            }
+        });
 
         // Modal Upload Excel Bosnet
         function bukaModalUpload() {
