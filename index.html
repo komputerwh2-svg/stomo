@@ -962,11 +962,16 @@
                         }
                     });
 
+                    // Kosongkan variabel global master
+                    window.masterDataGlobal = null;
+
                     customAlert("Cache master stok berhasil dibersihkan. Silakan unduh ulang master stok!");
                     muatStatistikDatabase();
-                    const gudang = localStorage.getItem('stomo_gudang');
-                    if (gudang && typeof updateTampilanArea === 'function') {
-                        updateTampilanArea(gudang);
+
+                    // Segarkan tampilan area/badge di tab Cek agar sinkron menjadi BELUM DOWNLOAD
+                    const gudangAktif = localStorage.getItem('stomo_gudang');
+                    if (gudangAktif && typeof updateTampilanArea === 'function') {
+                        updateTampilanArea(gudangAktif);
                     }
                 };
             }, "KONFIRMASI RESET MASTER");
@@ -982,16 +987,26 @@
 
                 tx.oncomplete = function() {
                     Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith('stomo_master_')) {
+                        if (key.startsWith('stomo_master_') || key.startsWith('stomo_sync_info')) {
                             localStorage.removeItem(key);
                         }
                     });
 
+                    // Kosongkan variabel global master
+                    window.masterDataGlobal = null;
+
                     customAlert("Database lokal berhasil di-reset total!");
                     muatStatistikDatabase();
+
                     if (typeof muatDaftarHasilCek === 'function') muatDaftarHasilCek();
                     if (typeof muatRiwayatInputTerbaru === 'function') muatRiwayatInputTerbaru();
                     if (typeof updatePendingBadge === 'function') updatePendingBadge();
+
+                    // Segarkan tampilan area/badge di tab Cek agar sinkron menjadi BELUM DOWNLOAD
+                    const gudangAktif = localStorage.getItem('stomo_gudang');
+                    if (gudangAktif && typeof updateTampilanArea === 'function') {
+                        updateTampilanArea(gudangAktif);
+                    }
                 };
             }, "RESET TOTAL DATABASE");
         }
@@ -1498,7 +1513,6 @@
                 fallbackFirebasePath = `stok_opname/${baseFolder}/master_data`;
             }
 
-            const dbRef = firebase.database().ref(targetFirebasePath);
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
             const fullFolderId = `${gudangClean}_${tanggalStr}`;
 
@@ -1506,29 +1520,8 @@
                 customAlert(`Sedang mengunduh master stok Gudang [${gudangAktif}] untuk tanggal ${YYYY}-${MM}-${DD}...`);
             }
 
-            // Fungsi helper untuk menyimpan data master ke IndexedDB
-            function simpanMasterKeIndexedDB(dataMaster) {
-                if (!db) {
-                    console.error("Database IndexedDB belum siap.");
-                    return;
-                }
-
-                try {
-                    const tx = db.transaction(["master_stok"], "readwrite");
-                    const store = tx.objectStore("master_stok");
-
-                    // Simpan data master per item atau sebagai satu objek besar di object store master_stok
-                    // Disini kita simpan berdasarkan identifier gudang + tanggal dan cache aktifnya
-                    store.put({ kode_gudang: fullFolderId, gudang: gudangClean, data: dataMaster });
-                    store.put({ kode_gudang: gudangClean, gudang: gudangClean, data: dataMaster });
-
-                    tx.oncomplete = function() {
-                        console.log("Master stok berhasil disimpan ke IndexedDB.");
-                    };
-                } catch (err) {
-                    console.error("Gagal menyimpan ke IndexedDB:", err);
-                }
-            }
+            // Eksekusi Ambil Data dari Firebase RTDB
+            const dbRef = firebase.database().ref(targetFirebasePath);
 
             dbRef.once('value')
                 .then(snapshot => {
@@ -1550,10 +1543,27 @@
                         return;
                     }
 
-                    // 4. Simpan master data ke IndexedDB (Aman dari batasan kuota HP)
-                    simpanMasterKeIndexedDB(dataMaster);
+                    // 4. Simpan master data ke IndexedDB dengan aman
+                    if (!db) {
+                        console.error("Database IndexedDB belum siap.");
+                        return;
+                    }
 
-                    // Simpan info sinkronisasi ringan ke localStorage (hanya teks kecil, tidak membebani kuota)
+                    const tx = db.transaction(["master_stok"], "readwrite");
+                    const store = tx.objectStore("master_stok");
+
+                    store.put({ kode_gudang: fullFolderId, gudang: gudangClean, data: dataMaster });
+                    store.put({ kode_gudang: gudangClean, gudang: gudangClean, data: dataMaster });
+
+                    tx.oncomplete = function() {
+                        console.log("Master stok berhasil disimpan ke IndexedDB.");
+                    };
+
+                    // 5. Simpan ke Cache LocalStorage agar instan dibaca antarmuka
+                    localStorage.setItem(`stomo_master_${fullFolderId}`, JSON.stringify(dataMaster));
+                    localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(dataMaster));
+
+                    // Simpan info sinkronisasi ringan ke localStorage
                     localStorage.setItem(`stomo_sync_info`, JSON.stringify({
                         gudang: gudangAktif,
                         petugas: namaPetugas,
@@ -1561,20 +1571,26 @@
                         waktu: new Date().toLocaleString()
                     }));
 
-                    console.log(`Master stok berhasil diunduh dan disimpan ke IndexedDB.`);
+                    // 6. Set variabel global agar form langsung mengenali data
+                    window.masterDataGlobal = dataMaster;
 
-                    // Segarkan tampilan badge status area
+                    // 7. Segarkan tampilan badge status area & form autocomplete
+                    const badgeStatus = document.getElementById('status-master-badge') || document.querySelector('.badge-status');
+                    if (badgeStatus) {
+                        badgeStatus.className = "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-full uppercase";
+                        badgeStatus.textContent = "STOK AKTIF";
+                    }
+
                     if (typeof updateTampilanArea === 'function') {
                         updateTampilanArea(gudangAktif);
                     }
 
-                    if (typeof customAlert === 'function') {
-                        customAlert(`Berhasil mengunduh Master Stok Gudang [${gudangAktif}] (${YYYY}-${MM}-${DD})! Data siap digunakan.`);
-                    }
-
-                    // Inisialisasi ulang autocomplete master jika fungsi tersedia
                     if (typeof initAutocompleteMaster === 'function') {
                         initAutocompleteMaster(dataMaster);
+                    }
+
+                    if (typeof customAlert === 'function') {
+                        customAlert(`Berhasil mengunduh Master Stok Gudang [${gudangAktif}] (${YYYY}-${MM}-${DD})! Data siap digunakan.`);
                     }
                 })
                 .catch(error => {
