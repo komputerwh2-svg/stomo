@@ -1797,12 +1797,18 @@
         requestDB.onsuccess = function(e) {
             db = e.target.result;
             console.log("IndexedDB berhasil dibuka.");
+            
             if (typeof updatePendingBadge === 'function') {
                 updatePendingBadge();
             }
-            // Panggil muat riwayat saat DB sukses dibuka
             if (typeof muatRiwayatInputTerbaru === 'function') {
                 muatRiwayatInputTerbaru();
+            }
+
+            // --- TAMBAHKAN BARIS INI ---
+            const gudangActive = localStorage.getItem('stomo_gudang');
+            if (gudangActive && typeof updateTampilanArea === 'function') {
+                updateTampilanArea(gudangActive);
             }
         };
 
@@ -2171,7 +2177,7 @@
                 qtyValText = arrQty.length > 0 ? arrQty.join(' / ') : '0 KRT';
             } else {
                 qtySingle = parseInt(document.getElementById('input-qty-single').value) || 0;
-                qtyValText = `${qtySingle} QTY`;
+                qtyValText = `${qtySingle} KRT`;
             }
 
             let dataSO = {
@@ -2512,7 +2518,7 @@
                 } else {
                     const qtySingle = parseInt(document.getElementById('edit-qty-single').value, 10) || 0;
                     item.qty_single = qtySingle;
-                    qtyValText = `${qtySingle} QTY`;
+                    qtyValText = `${qtySingle}`;
                 }
 
                 item.lokasi_rak = rakBaru;
@@ -3012,7 +3018,7 @@
                             if (dataRak.rtg > 0) arr.push(`${dataRak.rtg} RTG`);
                             qtyTeks = arr.join(' / ');
                         } else if (dataRak.single > 0) {
-                            qtyTeks = `${dataRak.single} QTY`;
+                            qtyTeks = `${dataRak.single} KRT`;
                         } else {
                             qtyTeks = [...dataRak.teksList].join(', ') || '0';
                         }
