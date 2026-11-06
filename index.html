@@ -1698,22 +1698,61 @@
 
             dbRef.once('value')
                 .then(snapshot => {
-                    let dataMaster = snapshot.val();
+                    let rawData = snapshot.val();
 
                     // Jika di path bertanggal kosong, coba cek fallback path tanpa tanggal
-                    if (!dataMaster && fallbackFirebasePath) {
+                    if (!rawData && fallbackFirebasePath) {
                         return firebase.database().ref(fallbackFirebasePath).once('value').then(fallbackSnap => {
                             return fallbackSnap.val();
                         });
                     }
-                    return dataMaster;
+                    return rawData;
                 })
-                .then(dataMaster => {
-                    if (!dataMaster) {
+                .then(rawData => {
+                    if (!rawData) {
                         if (typeof customAlert === 'function') {
                             customAlert(`Download data stok gagal atau belum ada data stok yang diupload untuk gudang [${gudangAktif}] tanggal ${YYYY}-${MM}-${DD}.`);
                         }
                         return;
+                    }
+
+                    let dataMaster = {};
+
+                    // --- PENANGANAN KHUSUS STRUKTUR STOK_BLOK ---
+                    if (targetFirebasePath === 'stok_blok') {
+                        Object.keys(rawData).forEach(namaBlok => {
+                            const itemsBarang = rawData[namaBlok];
+                            if (itemsBarang && typeof itemsBarang === 'object') {
+                                Object.keys(itemsBarang).forEach(kodeBarang => {
+                                    const expData = itemsBarang[kodeBarang];
+                                    let totalKrtBarang = 0;
+
+                                    if (expData && typeof expData === 'object') {
+                                        // Telusuri setiap tanggal expired di bawah kode barang
+                                        Object.keys(expData).forEach(expKey => {
+                                            const detailExp = expData[expKey];
+                                            if (detailExp && typeof detailExp === 'object') {
+                                                // Ambil nilai krt (mendukung huruf kecil maupun kapital)
+                                                let valKrt = parseInt(detailExp.krt || detailExp.KRT || 0, 10);
+                                                totalKrtBarang += valKrt;
+                                            }
+                                        });
+                                    }
+
+                                    // Gunakan kunci unik gabungan blok dan kode barang
+                                    const kunciUnik = `${namaBlok}_${kodeBarang}`.toUpperCase();
+                                    
+                                    dataMaster[kunciUnik] = {
+                                        KODE: kodeBarang,
+                                        NAMA: `STOK ${namaBlok} - ${kodeBarang}`,
+                                        K_AKHIR: `${totalKrtBarang}/0/0/0`,
+                                        blok: namaBlok.trim().toUpperCase()
+                                    };
+                                });
+                            }
+                        });
+                    } else {
+                        dataMaster = rawData;
                     }
 
                     // 4. Simpan master data ke IndexedDB
@@ -1731,10 +1770,10 @@
                     tx.oncomplete = function() {
                         console.log("Master stok berhasil disimpan ke IndexedDB.");
                         
-                        // LANGSUNG TERAPKAN KE FORM & VARIABEL GLOBAL DI SINI
+                        // LANGSUNG TERAPKAN KE FORM & VARIABEL GLOBAL
                         terapkanMasterKeForm(dataMaster, gudangAktif);
                         
-                        // --- TAMBAHKAN BARIS INI AGAR BADGE IKUT BERUBAH JADI HIJAU ---
+                        // UPDATE TAMPILAN AREA AGAR BADGE BERUBAH JADI HIJAU
                         updateTampilanArea(gudangAktif);
                     };
 
@@ -1995,7 +2034,7 @@
             } else {
                 // WH-2: Standar Single KRT
                 if (qtyStandar) qtyStandar.classList.remove('hidden');
-                if (labelTitle) labelTitle.textContent = "Jumlah Qty Fisik (Karton / KRT)";
+                if (labelTitle) labelTitle.textContent = "Jumlah Qty Fisik (KRT)";
             }
 
             // Opsi Rak/Lokasi
@@ -2087,6 +2126,10 @@
             let masterArray = Array.isArray(masterData) ? masterData : Object.values(masterData);
             const kw = keyword.toLowerCase().trim();
 
+            // Ambil informasi blok/rak yang sedang dipilih di form
+            const inputLokasiRak = document.getElementById('input-lokasi-rak');
+            const selectedRak = inputLokasiRak ? inputLokasiRak.value.trim().toUpperCase() : '';
+
             const isSubsequence = (query, target) => {
                 let i = 0, j = 0;
                 while (i < query.length && j < target.length) {
@@ -2101,11 +2144,27 @@
             const hasilFilter = masterArray.filter(item => {
                 const kode = String(item.KODE || item.Kode || item.CODE || '').toLowerCase();
                 const namaBarang = String(item.NAMA || item.Nama || item.BARANG || '').toLowerCase();
+                const itemBlok = String(item.blok || '').toUpperCase();
+
+                // Filter berdasarkan blok yang dipilih jika ada
+                if (selectedRak && selectedRak !== '' && selectedRak !== '-- PILIH / KETIK RAK --') {
+                    let cleanSelected = selectedRak.replace(/BLOK/g, '').trim().toLowerCase();
+                    let cleanItemBlok = itemBlok.replace(/BLOK/g, '').trim().toLowerCase();
+
+                    // Cek apakah item ini berasal dari blok yang sedang dipilih
+                    let matchBlok = cleanItemBlok ? (cleanItemBlok.includes(cleanSelected) || cleanSelected.includes(cleanItemBlok)) : true;
+                    let matchNamaBlokDiText = namaBarang.includes(cleanSelected);
+
+                    if (!matchBlok && !matchNamaBlokDiText) {
+                        return false;
+                    }
+                }
+
                 return isSubsequence(kw, kode) || kode.includes(kw) || namaBarang.includes(kw);
             }).slice(0, 15);
 
             if (hasilFilter.length === 0) {
-                dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Barang tidak ditemukan di master data.</div>`;
+                dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Barang tidak ditemukan di blok ini.</div>`;
                 dropdown.classList.remove('hidden');
                 return;
             }
@@ -2113,8 +2172,10 @@
             let htmlContent = '';
             hasilFilter.forEach(item => {
                 let kunciVal = item.KODE || item.Kode || item.CODE || '';
-                let namaVal = item.NAMA || item.Nama || item.BARANG || '';
-                let displayText = `${kunciVal} - ${namaVal}`.toUpperCase();
+                let stokKrt = item.K_AKHIR || '0'; // Mengambil format stok (misal: 470/0/0/0 atau 470)
+                
+                // Format ringkas: KODE - QTY STOK (misal: MJR2A01HJ - 470 KRT)
+                let displayText = `${kunciVal} - ${stokKrt}`.toUpperCase();
                 let safeText = displayText.replace(/'/g, "\\'");
 
                 htmlContent += `<div class="p-2.5 hover:bg-sky-50 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold border-b border-slate-100 dark:border-slate-700 uppercase" onclick="pilihBarangSaran('${safeText}')">${displayText}</div>`;
