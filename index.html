@@ -2712,17 +2712,30 @@
                     kolomUnikMap[kolomKey] = { rak: rak };
 
                     if (!rekapData[kode]) rekapData[kode] = {};
-                    if (!rekapData[kode][kolomKey]) {
-                        rekapData[kode][kolomKey] = { petugasSet: new Set(), krt: 0, ball: 0, rtg: 0, pcs: 0 };
-                    }
-
-                    rekapData[kode][kolomKey].petugasSet.add(ptg);
-
+                    
                     let qObj = parseBosnetQty(so.qty_teks);
-                    rekapData[kode][kolomKey].krt += (parseInt(so.qty_krt) || qObj.krt);
-                    rekapData[kode][kolomKey].ball += (parseInt(so.qty_ball) || qObj.ball);
-                    rekapData[kode][kolomKey].rtg += (parseInt(so.qty_rtg) || qObj.rtg);
-                    rekapData[kode][kolomKey].pcs += (parseInt(so.qty_pcs) || qObj.pcs);
+                    let valKrt = (parseInt(so.qty_krt) || qObj.krt);
+                    let valBall = (parseInt(so.qty_ball) || qObj.ball);
+                    let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
+                    let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+
+                    if (!rekapData[kode][kolomKey]) {
+                        rekapData[kode][kolomKey] = { 
+                            petugasSet: new Set([ptg]), 
+                            krt: valKrt, 
+                            ball: valBall, 
+                            rtg: valRtg, 
+                            pcs: valPcs 
+                        };
+                    } else {
+                        rekapData[kode][kolomKey].petugasSet.add(ptg);
+                        
+                        // Timpa dengan nilai acuan valid agar tidak terakumulasi ganda
+                        rekapData[kode][kolomKey].krt = valKrt;
+                        rekapData[kode][kolomKey].ball = valBall;
+                        rekapData[kode][kolomKey].rtg = valRtg;
+                        rekapData[kode][kolomKey].pcs = valPcs;
+                    }
                 });
 
                 let daftarKolom = Object.keys(kolomUnikMap).sort();
@@ -2966,19 +2979,33 @@
                 kolomUnikMap[kolomKey] = { rak: rak };
 
                 if (!rekapData[kode]) rekapData[kode] = {};
-                if (!rekapData[kode][kolomKey]) {
-                    rekapData[kode][kolomKey] = { petugasSet: new Set(), krt: 0, ball: 0, rtg: 0, pcs: 0 };
-                }
-
+                
                 let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
-                rekapData[kode][kolomKey].petugasSet.add(ptg);
-
-                // Ambil dari qty_teks (format Bosnet) atau properti terpisah
                 let qObj = parseBosnetQty(so.qty_teks);
-                rekapData[kode][kolomKey].krt += (parseInt(so.qty_krt) || qObj.krt);
-                rekapData[kode][kolomKey].ball += (parseInt(so.qty_ball) || qObj.ball);
-                rekapData[kode][kolomKey].rtg += (parseInt(so.qty_rtg) || qObj.rtg);
-                rekapData[kode][kolomKey].pcs += (parseInt(so.qty_pcs) || qObj.pcs);
+                let valKrt = (parseInt(so.qty_krt) || qObj.krt);
+                let valBall = (parseInt(so.qty_ball) || qObj.ball);
+                let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
+                let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+
+                if (!rekapData[kode][kolomKey]) {
+                    // Inisialisasi awal untuk rak ini
+                    rekapData[kode][kolomKey] = { 
+                        petugasSet: new Set([ptg]), 
+                        krt: valKrt, 
+                        ball: valBall, 
+                        rtg: valRtg, 
+                        pcs: valPcs 
+                    };
+                } else {
+                    // Catat nama petugas yang terlibat dalam crosscheck
+                    rekapData[kode][kolomKey].petugasSet.add(ptg);
+                    
+                    // Ambil nilai Qty terbaru/tervalidasi (BUKAN dijumlahkan ganda)
+                    rekapData[kode][kolomKey].krt = valKrt;
+                    rekapData[kode][kolomKey].ball = valBall;
+                    rekapData[kode][kolomKey].rtg = valRtg;
+                    rekapData[kode][kolomKey].pcs = valPcs;
+                }
             });
 
             let daftarKolom = Object.keys(kolomUnikMap).sort();
