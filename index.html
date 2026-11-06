@@ -511,41 +511,41 @@
                 <p class="text-[11px] text-slate-400 dark:text-slate-500 font-bold tracking-wider uppercase mt-0.5">Monitoring & Pembersihan Cache Database StOMo</p>
             </div>
 
-            <!-- Grid Ringkasan Data Lokal -->
+            <!-- Grid Ringkasan Data Lokal (Dapat Diklik) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                <!-- Info Hasl SO -->
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <!-- Info Hasil SO -->
+                <div onclick="bukaDetailDatabase('so')" class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between cursor-pointer hover:border-sky-500 dark:hover:border-sky-500 transition-all active:scale-95 group">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hasil Cek SO</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-sky-500 transition-colors">Hasil Cek SO</span>
                         <i class="fa-solid fa-clipboard-list text-sky-500"></i>
                     </div>
                     <div>
                         <div id="stat-count-so" class="text-xl font-black text-slate-800 dark:text-slate-100">0 Items</div>
-                        <p class="text-[9px] text-slate-400 mt-0.5">Tersimpan di Database Lokal</p>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Klik untuk lihat rincian</p>
                     </div>
                 </div>
 
                 <!-- Info Master Stok -->
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div onclick="bukaDetailDatabase('master')" class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500 transition-all active:scale-95 group">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Master Stok</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-emerald-500 transition-colors">Master Stok</span>
                         <i class="fa-solid fa-boxes-stacked text-emerald-500"></i>
                     </div>
                     <div>
-                        <div id="stat-count-master" class="text-xl font-black text-slate-800 dark:text-slate-100">0 Data</div>
-                        <p class="text-[9px] text-slate-400 mt-0.5">Cache Master Per Gudang</p>
+                        <div id="stat-count-master" class="text-xl font-black text-slate-800 dark:text-slate-100">0 Gudang</div>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Klik untuk lihat rincian</p>
                     </div>
                 </div>
 
                 <!-- Info Status Pending Sync -->
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div onclick="bukaDetailDatabase('pending')" class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between cursor-pointer hover:border-amber-500 dark:hover:border-amber-500 transition-all active:scale-95 group">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Upload</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-amber-500 transition-colors">Pending Upload</span>
                         <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i>
                     </div>
                     <div>
                         <div id="stat-count-pending" class="text-xl font-black text-amber-600 dark:text-amber-400">0 Item</div>
-                        <p class="text-[9px] text-slate-400 mt-0.5">Belum Sinkron</p>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Klik untuk lihat rincian</p>
                     </div>
                 </div>
             </div>
@@ -590,6 +590,34 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- MODAL DETAIL INFORMASI DATABASE LOKAL -->
+    <div id="modalDetailDatabase" class="fixed inset-0 bg-slate-900/80 dark:bg-slate-950/85 backdrop-blur-sm z-[10000] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative flex flex-col max-h-[85vh]">
+            
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 id="modal-db-title" class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-sky-500"></i> Detail Informasi Database
+                </h3>
+                <button onclick="tutupModalDetailDatabase()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Kontainer Daftar Isi Detail (Scrollable) -->
+            <div id="modal-db-content" class="overflow-y-auto space-y-2 pr-1 flex-grow text-xs">
+                <!-- Data detail akan dimuat secara dinamis di sini -->
+            </div>
+
+            <!-- Tombol Tutup Bawah -->
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-right">
+                <button onclick="tutupModalDetailDatabase()" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all">
+                    Tutup
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1010,6 +1038,118 @@
                 };
             }, "RESET TOTAL DATABASE");
         }
+
+        // --- FUNGSI MEMBUKA MODAL DETAIL BERDASARKAN KARTU YANG DIKLIK ---
+        function bukaDetailDatabase(tipe) {
+            if (!db) return;
+
+            const modal = document.getElementById('modalDetailDatabase');
+            const titleEl = document.getElementById('modal-db-title');
+            const contentEl = document.getElementById('modal-db-content');
+
+            contentEl.innerHTML = `<div class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Memuat rincian data...</div>`;
+            modal.classList.remove('hidden');
+
+            if (tipe === 'so') {
+                titleEl.innerHTML = `<i class="fa-solid fa-clipboard-list text-sky-500"></i> Rincian Hasil Cek Fisik Lokal`;
+                
+                const tx = db.transaction(["hasil_so"], "readonly");
+                const store = tx.objectStore("hasil_so");
+                store.getAll().onsuccess = function(e) {
+                    const data = e.target.result || [];
+                    if (data.length === 0) {
+                        contentEl.innerHTML = `<p class="text-center py-8 text-slate-400 italic">Tidak ada riwayat hasil cek SO di database lokal.</p>`;
+                        return;
+                    }
+
+                    let html = `<div class="space-y-2">`;
+                    data.forEach((item, idx) => {
+                        const waktu = new Date(item.timestamp).toLocaleString();
+                        const statusSync = item.synced === 1 ? `<span class="text-emerald-600 font-bold">SUDAH SYNC</span>` : `<span class="text-amber-600 font-bold">PENDING</span>`;
+                        html += `
+                            <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                <div>
+                                    <div class="font-black text-slate-800 dark:text-slate-200 uppercase">${idx + 1}. [${item.lokasi_rak || '-'}] ${item.kode_barang}</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Qty: <b class="text-emerald-600">${item.qty_teks || '0'}</b> | Petugas: ${item.nama_petugas || '-'}</div>
+                                    <div class="text-[9px] text-slate-400">${waktu}</div>
+                                </div>
+                                <div class="text-[9px] px-2 py-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">${statusSync}</div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                    contentEl.innerHTML = html;
+                };
+
+            } else if (tipe === 'master') {
+                titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked text-emerald-500"></i> Rincian Cache Master Stok Per Gudang`;
+                
+                const tx = db.transaction(["master_stok"], "readonly");
+                const store = tx.objectStore("master_stok");
+                store.getAll().onsuccess = function(e) {
+                    const data = e.target.result || [];
+                    if (data.length === 0) {
+                        contentEl.innerHTML = `<p class="text-center py-8 text-slate-400 italic">Tidak ada cache master stok di perangkat.</p>`;
+                        return;
+                    }
+
+                    let html = `<div class="space-y-2">`;
+                    data.forEach((item, idx) => {
+                        let jumlahItemMaster = item.data ? Object.keys(item.data).length : 0;
+                        html += `
+                            <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                <div>
+                                    <div class="font-black text-slate-800 dark:text-slate-200 uppercase">Gudang ID: ${item.kode_gudang}</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Total Master Produk: <b class="text-sky-600">${jumlahItemMaster} Item</b></div>
+                                </div>
+                                <span class="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[9px] font-black px-2 py-1 rounded-full">CACHED</span>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                    contentEl.innerHTML = html;
+                };
+
+            } else if (tipe === 'pending') {
+                titleEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Rincian Data Belum Sinkron (Pending)`;
+                
+                const tx = db.transaction(["hasil_so"], "readonly");
+                const store = tx.objectStore("hasil_so");
+                store.getAll().onsuccess = function(e) {
+                    const data = e.target.result || [];
+                    const pendingData = data.filter(item => item.synced === 0 || !item.synced);
+
+                    if (pendingData.length === 0) {
+                        contentEl.innerHTML = `<p class="text-center py-8 text-slate-400 italic">Semua data hasil cek sudah tersinkronisasi ke server (0 Pending).</p>`;
+                        return;
+                    }
+
+                    let html = `<div class="space-y-2">`;
+                    pendingData.forEach((item, idx) => {
+                        const waktu = new Date(item.timestamp).toLocaleString();
+                        html += `
+                            <div class="bg-amber-50/50 dark:bg-amber-950/20 p-3 rounded-xl border border-amber-200 dark:border-amber-900/50 flex justify-between items-center">
+                                <div>
+                                    <div class="font-black text-slate-800 dark:text-slate-200 uppercase">${idx + 1}. [${item.lokasi_rak || '-'}] ${item.kode_barang}</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Qty: <b class="text-emerald-600">${item.qty_teks || '0'}</b> | Gudang: ${item.gudang}</div>
+                                    <div class="text-[9px] text-slate-400">${waktu}</div>
+                                </div>
+                                <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[9px] font-black px-2 py-1 rounded-full">BELUM UPLOAD</span>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                    contentEl.innerHTML = html;
+                };
+            }
+        }
+
+        function tutupModalDetailDatabase() {
+            const modal = document.getElementById('modalDetailDatabase');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
     </script>
 
     <script>
@@ -1104,32 +1244,53 @@
             document.getElementById('userGreeting').innerHTML = `<i class="fa-solid fa-circle-user mr-1 text-emerald-400"></i> ${user} [${role || 'WH'}] - <b class="font-bold text-sky-200">${gudang}</b>`;
         }
 
-        // --- FUNGSI UPDATE TAMPILAN AREA & STATUS MASTER DATA ---
+        // --- FUNGSI UPDATE TAMPILAN AREA & STATUS MASTER DATA DARI INDEXEDDB ---
         function updateTampilanArea(gudang) {
             const areaElem = document.getElementById('display-area-opname');
             if (!areaElem) return;
 
-            // Normalisasi nama gudang untuk pengecekan local storage
             const gudangClean = String(gudang || '').trim().replace(/\s+/g, '_');
             
-            // Cek apakah master data untuk gudang ini sudah ada di localStorage
-            const masterDataLokal = localStorage.getItem(`stomo_master_${gudangClean}`);
-            
+            // Cek ke IndexedDB apakah master data gudang ini sudah ada
+            if (!db) {
+                renderBadgeStatus(areaElem, gudang, false);
+                return;
+            }
+
+            try {
+                const tx = db.transaction(["master_stok"], "readonly");
+                const store = tx.objectStore("master_stok");
+                const req = store.get(gudangClean);
+
+                req.onsuccess = function(e) {
+                    const res = e.target.result;
+                    if (res && res.data) {
+                        window.masterDataGlobal = res.data;
+                        renderBadgeStatus(areaElem, gudang, true);
+                    } else {
+                        window.masterDataGlobal = null;
+                        renderBadgeStatus(areaElem, gudang, false);
+                    }
+                };
+                req.onerror = function() {
+                    renderBadgeStatus(areaElem, gudang, false);
+                };
+            } catch (err) {
+                renderBadgeStatus(areaElem, gudang, false);
+            }
+        }
+
+        function renderBadgeStatus(areaElem, gudang, isAktif) {
             let statusBadge = '';
-            
-            if (masterDataLokal) {
-                // Jika master data sudah diunduh (Aktif - Hijau)
+            if (isAktif) {
                 statusBadge = `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 animate-pulse">
                                    <span class="w-1.5 h-1.5 mr-1 bg-emerald-500 rounded-full"></span> STOK AKTIF
                                </span>`;
             } else {
-                // Jika master data belum diunduh / belum ada (Nonaktif - Merah)
                 statusBadge = `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-300 dark:border-rose-800">
                                    <span class="w-1.5 h-1.5 mr-1 bg-rose-500 rounded-full"></span> BELUM DOWNLOAD
                                </span>`;
             }
-
-            // Perbarui tampilan elemen HTML
             areaElem.innerHTML = `STOK OPNAME : <span class="text-sky-600 dark:text-sky-400">${gudang}</span> ${statusBadge}`;
         }
 
@@ -1543,7 +1704,7 @@
                         return;
                     }
 
-                    // 4. Simpan master data ke IndexedDB dengan aman
+                    // 4. Simpan master data ke IndexedDB
                     if (!db) {
                         console.error("Database IndexedDB belum siap.");
                         return;
@@ -1557,37 +1718,20 @@
 
                     tx.oncomplete = function() {
                         console.log("Master stok berhasil disimpan ke IndexedDB.");
+                        
+                        // LANGSUNG TERAPKAN KE FORM & VARIABEL GLOBAL DI SINI
+                        terapkanMasterKeForm(dataMaster, gudangAktif);
+                        
+                        // --- TAMBAHKAN BARIS INI AGAR BADGE IKUT BERUBAH JADI HIJAU ---
+                        updateTampilanArea(gudangAktif);
                     };
 
-                    // 5. Simpan ke Cache LocalStorage agar instan dibaca antarmuka
-                    localStorage.setItem(`stomo_master_${fullFolderId}`, JSON.stringify(dataMaster));
-                    localStorage.setItem(`stomo_master_${gudangClean}`, JSON.stringify(dataMaster));
-
-                    // Simpan info sinkronisasi ringan ke localStorage
                     localStorage.setItem(`stomo_sync_info`, JSON.stringify({
                         gudang: gudangAktif,
                         petugas: namaPetugas,
                         asal: asalPetugas,
                         waktu: new Date().toLocaleString()
                     }));
-
-                    // 6. Set variabel global agar form langsung mengenali data
-                    window.masterDataGlobal = dataMaster;
-
-                    // 7. Segarkan tampilan badge status area & form autocomplete
-                    const badgeStatus = document.getElementById('status-master-badge') || document.querySelector('.badge-status');
-                    if (badgeStatus) {
-                        badgeStatus.className = "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-full uppercase";
-                        badgeStatus.textContent = "STOK AKTIF";
-                    }
-
-                    if (typeof updateTampilanArea === 'function') {
-                        updateTampilanArea(gudangAktif);
-                    }
-
-                    if (typeof initAutocompleteMaster === 'function') {
-                        initAutocompleteMaster(dataMaster);
-                    }
 
                     if (typeof customAlert === 'function') {
                         customAlert(`Berhasil mengunduh Master Stok Gudang [${gudangAktif}] (${YYYY}-${MM}-${DD})! Data siap digunakan.`);
@@ -1599,6 +1743,33 @@
                         customAlert("Download data stok gagal: " + error.message);
                     }
                 });
+        }
+
+        function terapkanMasterKeForm(dataMaster, gudangAktif) {
+            // Masukkan ke variabel global agar terbaca oleh form pencarian
+            window.masterDataGlobal = dataMaster;
+
+            // 1. Ubah badge status menjadi STOK AKTIF (Hijau)
+            const badgeStatus = document.getElementById('status-master-badge') || document.querySelector('.badge-status');
+            if (badgeStatus) {
+                badgeStatus.className = "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-full uppercase";
+                badgeStatus.textContent = "STOK AKTIF";
+            }
+
+            // 2. Sembunyikan semua teks peringatan "Master data belum didownload"
+            const semuaDiv = document.querySelectorAll('div, span, p');
+            semuaDiv.forEach(el => {
+                if (el.textContent && el.textContent.includes('Master data belum didownload')) {
+                    el.style.display = 'none';
+                }
+            });
+
+            // 3. Aktifkan autocomplete master barang
+            if (typeof initAutocompleteMaster === 'function') {
+                initAutocompleteMaster(dataMaster);
+            }
+            
+            console.log(`Master stok untuk gudang [${gudangAktif}] berhasil diterapkan ke form.`);
         }
 
         // --- 1. INISIALISASI INDEXEDDB (Penyempurnaan untuk Hasil SO & Master Data) ---
@@ -1839,11 +2010,9 @@
             }
         }
 
-        // --- 3. AUTOCOMPLETE PENCARIAN DENGAN SUBSEQUENCE MATCH (FLEKSIBEL SEPERTI MR33) ---
+        // --- 3. AUTOCOMPLETE PENCARIAN MEMBACA DARI INDEXEDDB / MEMORI GLOBAL ---
         function cariSaranBarang(keyword) {
             const dropdown = document.getElementById('saran-autocomplete');
-            const gudang = localStorage.getItem('stomo_gudang') || 'DEFAULT';
-            const gudangClean = gudang.replace(/\s+/g, '_');
             
             // Jika ketikan kosong, sembunyikan dropdown
             if (!keyword || keyword.trim().length === 0) {
@@ -1854,29 +2023,51 @@
                 return;
             }
 
-            const rawMaster = localStorage.getItem(`stomo_master_${gudangClean}`);
-            if (!rawMaster) {
-                if (dropdown) {
-                    dropdown.innerHTML = `<div class="p-2.5 text-xs text-amber-600 font-bold">Master data belum didownload. Klik 'Download Master Stok' di atas.</div>`;
-                    dropdown.classList.remove('hidden');
+            // Gunakan master data dari memori global jika sudah dimuat
+            let masterData = window.masterDataGlobal;
+
+            if (!masterData) {
+                // Jika belum ada di memori global, coba tarik langsung dari IndexedDB
+                if (!db) {
+                    tampilkanPesanBelumDownload(dropdown);
+                    return;
                 }
-                return;
-            }
 
-            let masterData;
-            try {
-                masterData = JSON.parse(rawMaster);
-            } catch (err) {
-                console.error("Gagal parsing master data:", err);
-                return;
-            }
+                const gudang = localStorage.getItem('stomo_gudang') || '';
+                const gudangClean = gudang.replace(/\s+/g, '_');
 
-            // Ubah master data menjadi array (jika objek key-value atau array)
+                const tx = db.transaction(["master_stok"], "readonly");
+                const store = tx.objectStore("master_stok");
+                const req = store.get(gudangClean);
+
+                req.onsuccess = function(e) {
+                    const res = e.target.result;
+                    if (res && res.data) {
+                        window.masterDataGlobal = res.data;
+                        eksekusiFilterAutocomplete(res.data, keyword, dropdown);
+                    } else {
+                        tampilkanPesanBelumDownload(dropdown);
+                    }
+                };
+                req.onerror = function() {
+                    tampilkanPesanBelumDownload(dropdown);
+                };
+            } else {
+                eksekusiFilterAutocomplete(masterData, keyword, dropdown);
+            }
+        }
+
+        function tampilkanPesanBelumDownload(dropdown) {
+            if (dropdown) {
+                dropdown.innerHTML = `<div class="p-2.5 text-xs text-amber-600 dark:text-amber-400 font-bold">Master data belum didownload. Klik 'Download Master Stok' di atas.</div>`;
+                dropdown.classList.remove('hidden');
+            }
+        }
+
+        function eksekusiFilterAutocomplete(masterData, keyword, dropdown) {
             let masterArray = Array.isArray(masterData) ? masterData : Object.values(masterData);
-
             const kw = keyword.toLowerCase().trim();
 
-            // Fungsi helper Subsequence Match (karakter berurutan secara fleksibel)
             const isSubsequence = (query, target) => {
                 let i = 0, j = 0;
                 while (i < query.length && j < target.length) {
@@ -1888,14 +2079,11 @@
                 return i === query.length;
             };
 
-            // Filter data master berdasarkan kode atau nama barang
             const hasilFilter = masterArray.filter(item => {
                 const kode = String(item.KODE || item.Kode || item.CODE || '').toLowerCase();
                 const namaBarang = String(item.NAMA || item.Nama || item.BARANG || '').toLowerCase();
-                
-                // Cocokkan apakah kodenya memenuhi pola subsequence, mengandung substring, atau nama barang mengandung keyword
                 return isSubsequence(kw, kode) || kode.includes(kw) || namaBarang.includes(kw);
-            }).slice(0, 15); // Ambil maksimal 15 hasil teratas
+            }).slice(0, 15);
 
             if (hasilFilter.length === 0) {
                 dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Barang tidak ditemukan di master data.</div>`;
@@ -1908,8 +2096,6 @@
                 let kunciVal = item.KODE || item.Kode || item.CODE || '';
                 let namaVal = item.NAMA || item.Nama || item.BARANG || '';
                 let displayText = `${kunciVal} - ${namaVal}`.toUpperCase();
-
-                // Escape tanda kutip agar aman dimasukkan ke string onclick HTML
                 let safeText = displayText.replace(/'/g, "\\'");
 
                 htmlContent += `<div class="p-2.5 hover:bg-sky-50 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold border-b border-slate-100 dark:border-slate-700 uppercase" onclick="pilihBarangSaran('${safeText}')">${displayText}</div>`;
