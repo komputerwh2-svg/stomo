@@ -3235,6 +3235,12 @@
                 let totalKrt = 0, totalBall = 0, totalRtg = 0, totalPcs = 0;
                 let adaDataInput = false;
 
+                // --- SERTAKAN STOK BLOK KE DALAM TOTAL REKAP JIKA DI WH-3 ---
+                if (isGudangWH3 && totalKrtBlok > 0) {
+                    adaDataInput = true;
+                    totalKrt += totalKrtBlok;
+                }
+
                 daftarKolom.forEach(kolomKey => {
                     const dataRak = rekapData[kode] && rekapData[kode][kolomKey];
 
