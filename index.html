@@ -1932,12 +1932,13 @@
                 let itemsToUpdate = [];
 
                 pendingItems.forEach(item => {
-                    // Format Kunci Unik (ID): RAK_KODEBARANG_NAMAPETUGAS
+                    // Format Kunci Unik (ID) dengan menyertakan timestamp agar data ganda/berulang tidak saling menimpa
                     const rakClean = String(item.lokasi_rak || 'UMUM').trim().replace(/[\s.#$\[\]\/]/g, '_').toUpperCase();
                     const kodeClean = String(item.kode_barang || 'BARANG').trim().replace(/[\s.#$\[\]\/]/g, '_').toUpperCase();
                     const petugasClean = String(item.nama_petugas || userAktif).trim().replace(/[\s.#$\[\]\/]/g, '_').toUpperCase();
+                    const timestampUnik = item.timestamp || Date.now();
 
-                    const customKeyId = `${rakClean}_${kodeClean}_${petugasClean}`;
+                    const customKeyId = `${rakClean}_${kodeClean}_${petugasClean}_${timestampUnik}`;
                     const targetRef = firebase.database().ref(`stok_opname/${fullFolderId}/hasil_so/${customKeyId}`);
 
                     const payload = { ...item, synced: 1 };
@@ -2998,6 +2999,69 @@
                 masterArray = Array.isArray(masterData) ? masterData : Object.values(masterData);
             }
 
+            // Deteksi apakah gudang aktif adalah WH-3
+            const isGudangWH3 = gudangAktif.toUpperCase().includes('WH-3') && !gudangAktif.toUpperCase().includes('BLOK');
+
+            // Variabel untuk menampung total qty blok gabungan berdasarkan hasil opname
+            let rekapQtyBlokMap = {};
+
+            // Jika di WH-3, ambil data hasil_so dari folder WH-3_BLOK
+            if (isGudangWH3) {
+                const now = new Date();
+                const YYYY = now.getFullYear();
+                const MM = String(now.getMonth() + 1).padStart(2, '0');
+                const DD = String(now.getDate()).padStart(2, '0');
+
+                // Cek apakah data blok sudah tersimpan di memori global atau perlu ditarik dari Firebase
+                if (!window.dataHasilBlokGlobal && typeof firebase !== 'undefined' && firebase.database) {
+                    firebase.database().ref(`stok_opname`).once('value').then(snap => {
+                        const allStokOpname = snap.val();
+                        if (allStokOpname) {
+                            window.dataHasilBlokGlobal = {};
+                            window._petugasBlokList = window._petugasBlokList || "";
+                            let pSet = new Set();
+                            
+                            // Cari semua folder yang mengandung 'WH-3_BLOK'
+                            Object.keys(allStokOpname).forEach(folderKey => {
+                                if (folderKey.toUpperCase().includes('WH-3_BLOK')) {
+                                    let folderData = allStokOpname[folderKey];
+                                    if (folderData && folderData.hasil_so) {
+                                        let hasilSoBlok = folderData.hasil_so;
+                                        Object.keys(hasilSoBlok).forEach(soKey => {
+                                            let itemSo = hasilSoBlok[soKey];
+                                            let kBarang = String(itemSo.kode_barang || '').trim().toUpperCase();
+                                            let kKrt = parseInt(itemSo.qty_krt || 0, 10);
+                                            let pName = String(itemSo.nama_petugas || itemSo.user_id || '').trim().toUpperCase();
+                                            
+                                            if (pName) pSet.add(pName);
+                                            if (kBarang) {
+                                                if (!window.dataHasilBlokGlobal[kBarang]) {
+                                                    window.dataHasilBlokGlobal[kBarang] = 0;
+                                                }
+                                                window.dataHasilBlokGlobal[kBarang] += kKrt;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+
+                            if (pSet.size > 0) {
+                                window._petugasBlokList = [...pSet].sort().join(' & ');
+                            }
+                            
+                            // Render ulang tabel setelah data terkumpul
+                            renderTabelLaporan(masterData, semuaSO, gudangAktif, tanggalArsip);
+                        }
+                    });
+                }
+                
+                if (window.dataHasilBlokGlobal) {
+                    rekapQtyBlokMap = window.dataHasilBlokGlobal;
+                }
+            }
+
+            let namaPtgBlokHeader = window._petugasBlokList || 'PETUGAS BLOK';
+
             let semuaKodeBarang = new Set();
             masterArray.forEach(m => {
                 let k = String(m.KODE || m.Kode || m.KODE_BARANG || '').trim().toUpperCase();
@@ -3058,14 +3122,12 @@
                         pcs: valPcs 
                     };
                 } else {
-                    // Catat nama petugas yang terlibat dalam crosscheck
+                    // Catat nama petugas yang terlibat & akumulasikan penjumlahan input ganda di rak yang sama
                     rekapData[kode][kolomKey].petugasSet.add(ptg);
-                    
-                    // Ambil nilai Qty terbaru/tervalidasi (BUKAN dijumlahkan ganda)
-                    rekapData[kode][kolomKey].krt = valKrt;
-                    rekapData[kode][kolomKey].ball = valBall;
-                    rekapData[kode][kolomKey].rtg = valRtg;
-                    rekapData[kode][kolomKey].pcs = valPcs;
+                    rekapData[kode][kolomKey].krt += valKrt;
+                    rekapData[kode][kolomKey].ball += valBall;
+                    rekapData[kode][kolomKey].rtg += valRtg;
+                    rekapData[kode][kolomKey].pcs += valPcs;
                 }
             });
 
@@ -3098,6 +3160,18 @@
                                     <th class="p-3 min-w-[200px]">Kode & Nama Barang</th>
                                     <th class="p-3 text-center min-w-[110px]">Stok Bosnet</th>
             `;
+
+            // Sisipkan kolom Stok Blok beserta nama petugasnya jika di laporan WH-3
+            if (isGudangWH3) {
+                html += `
+                    <th class="p-3 text-center bg-amber-50/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 min-w-[140px]">
+                        <div class="text-[9px] font-black flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-users text-[8px]"></i> ${namaPtgBlokHeader}
+                        </div>
+                        <span class="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 px-1.5 py-0.2 rounded text-[8px] font-extrabold inline-block mt-0.5">[STOK BLOK]</span>
+                    </th>
+                `;
+            }
 
             daftarKolom.forEach(kolomKey => {
                 let petugasDiRak = new Set();
@@ -3136,6 +3210,10 @@
 
                 let masterObj = parseBosnetQty(kAkhir);
 
+                // --- AMBIL AKUMULASI QTY DARI HASIL OPNAME WH-3 BLOK ---
+                let totalKrtBlok = rekapQtyBlokMap[kode] || 0;
+                let stokBlokTeks = `${totalKrtBlok}/0/0/0`;
+
                 html += `
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                         <td class="p-3 text-center font-bold text-slate-400 text-[11px] align-middle">${no}</td>
@@ -3145,6 +3223,14 @@
                         </td>
                         <td class="p-3 text-center font-black text-sky-600 dark:text-sky-400 font-mono align-middle">${kAkhir}</td>
                 `;
+
+                if (isGudangWH3) {
+                    html += `
+                        <td class="p-3 text-center font-black text-amber-600 dark:text-amber-400 font-mono align-middle bg-amber-50/20 dark:bg-amber-950/10">
+                            ${stokBlokTeks}
+                        </td>
+                    `;
+                }
 
                 let totalKrt = 0, totalBall = 0, totalRtg = 0, totalPcs = 0;
                 let adaDataInput = false;
@@ -3179,7 +3265,6 @@
 
                 let rekapTeksFormat = `${totalKrt}/${totalBall}/${totalRtg}/${totalPcs}`;
                 
-                // Format selisih agar angka 0 tidak memiliki tanda plus (+)
                 let formatKrt = selisihKrt > 0 ? `+${selisihKrt}` : selisihKrt;
                 let formatBall = selisihBall > 0 ? `+${selisihBall}` : selisihBall;
                 let formatRtg = selisihRtg > 0 ? `+${selisihRtg}` : selisihRtg;
