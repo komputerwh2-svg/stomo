@@ -946,6 +946,9 @@
         function muatStatistikDatabase() {
             if (!db) return;
 
+            const gudangAktif = localStorage.getItem('stomo_gudang') || '';
+            const gudangClean = gudangAktif.replace(/\s+/g, '_').toUpperCase();
+
             const tx = db.transaction(["hasil_so", "master_stok"], "readonly");
             const storeSO = tx.objectStore("hasil_so");
             const storeMaster = tx.objectStore("master_stok");
@@ -954,17 +957,31 @@
             const reqSO = storeSO.getAll();
             reqSO.onsuccess = function(e) {
                 const data = e.target.result || [];
-                document.getElementById('stat-count-so').textContent = `${data.length} Items`;
+                // Filter SO juga berdasarkan gudang aktif jika diperlukan
+                const dataGudang = data.filter(item => {
+                    let itemGudang = String(item.gudang || '').trim().toUpperCase();
+                    return !gudangAktif || itemGudang === gudangClean || itemGudang.includes(gudangClean);
+                });
 
-                const pendingCount = data.filter(item => item.synced === 0 || !item.synced).length;
+                document.getElementById('stat-count-so').textContent = `${dataGudang.length} Items`;
+
+                const pendingCount = dataGudang.filter(item => item.synced === 0 || !item.synced).length;
                 document.getElementById('stat-count-pending').textContent = `${pendingCount} Item`;
             };
 
-            // Hitung jumlah cache master stok
+            // Hitung jumlah cache master stok khusus gudang aktif
             const reqMaster = storeMaster.getAll();
             reqMaster.onsuccess = function(e) {
                 const data = e.target.result || [];
-                document.getElementById('stat-count-master').textContent = `${data.length} Gudang`;
+                
+                // Terapkan filter yang sama persis seperti pada modal rincian
+                const filteredMaster = data.filter(item => {
+                    let itemGudang = String(item.gudang || '').trim().toUpperCase();
+                    let itemKode = String(item.kode_gudang || '').trim().toUpperCase();
+                    return itemGudang === gudangClean || itemKode === gudangClean || itemKode.startsWith(gudangClean + '_');
+                });
+
+                document.getElementById('stat-count-master').textContent = `${filteredMaster.length} Gudang`;
             };
         }
 
@@ -1094,14 +1111,25 @@
                 };
 
             } else if (tipe === 'master') {
-                titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked text-emerald-500"></i> Rincian Cache Master Stok Per Gudang`;
+                const gudangAktif = localStorage.getItem('stomo_gudang') || '';
+                const gudangClean = gudangAktif.replace(/\s+/g, '_').toUpperCase();
+                
+                titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked text-emerald-500"></i> Rincian Cache Master Stok [${gudangAktif}]`;
                 
                 const tx = db.transaction(["master_stok"], "readonly");
                 const store = tx.objectStore("master_stok");
                 store.getAll().onsuccess = function(e) {
-                    const data = e.target.result || [];
+                    const allData = e.target.result || [];
+                    
+                    // Filter hanya cache yang sesuai dengan gudang aktif saat ini
+                    const data = allData.filter(item => {
+                        let itemGudang = String(item.gudang || '').trim().toUpperCase();
+                        let itemKode = String(item.kode_gudang || '').trim().toUpperCase();
+                        return itemGudang === gudangClean || itemKode === gudangClean || itemKode.startsWith(gudangClean + '_');
+                    });
+
                     if (data.length === 0) {
-                        contentEl.innerHTML = `<p class="text-center py-8 text-slate-400 italic">Tidak ada cache master stok di perangkat.</p>`;
+                        contentEl.innerHTML = `<p class="text-center py-8 text-slate-400 italic">Tidak ada cache master stok untuk gudang <b>${gudangAktif}</b> di perangkat.</p>`;
                         return;
                     }
 
@@ -1114,14 +1142,13 @@
                                     <div class="font-black text-slate-800 dark:text-slate-200 uppercase">Gudang ID: ${item.kode_gudang}</div>
                                     <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Total Master Produk: <b class="text-sky-600">${jumlahItemMaster} Item</b></div>
                                 </div>
-                                <span class="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[9px] font-black px-2 py-1 rounded-full">CACHED</span>
+                                <span class="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[9px] font-black px-2 py-1 rounded-full">ACTIVE CACHED</span>
                             </div>
                         `;
                     });
                     html += `</div>`;
                     contentEl.innerHTML = html;
                 };
-
             } else if (tipe === 'pending') {
                 titleEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Rincian Data Belum Sinkron (Pending)`;
                 
@@ -1165,6 +1192,54 @@
     </script>
 
     <script>
+        // --- FUNGSI AMBIL MASTER STOK SPESIFIK BERDASARKAN GUDANG AKTIF ---
+        function muatMasterStokAktif() {
+            const gudangAktif = localStorage.getItem('stomo_gudang') || '';
+            if (!gudangAktif) return Promise.resolve(null);
+
+            const gudangClean = gudangAktif.replace(/\s+/g, '_').toUpperCase();
+
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    console.error("IndexedDB belum siap.");
+                    resolve(null);
+                    return;
+                }
+
+                const tx = db.transaction(["master_stok"], "readonly");
+                const store = tx.objectStore("master_stok");
+                const request = store.getAll();
+
+                request.onsuccess = function(event) {
+                    const listCache = event.target.result;
+                    if (!listCache || listCache.length === 0) {
+                        resolve(null);
+                        return;
+                    }
+
+                    // Cari cache yang persis sesuai dengan gudang aktif saat ini
+                    let matched = listCache.find(item => {
+                        let itemGudang = String(item.gudang || '').trim().toUpperCase();
+                        let itemKode = String(item.kode_gudang || '').trim().toUpperCase();
+                        return itemGudang === gudangClean || itemKode === gudangClean || itemKode.startsWith(gudangClean + '_');
+                    });
+
+                    if (matched && matched.data) {
+                        console.log(`Master stok dimuat khusus untuk gudang aktif: ${gudangAktif}`);
+                        resolve(matched.data);
+                    } else {
+                        console.warn(`Cache master untuk gudang ${gudangAktif} tidak ditemukan.`);
+                        resolve(null);
+                    }
+                };
+
+                request.onerror = function(error) {
+                    console.error("Gagal membaca cache master:", error);
+                    resolve(null);
+                };
+            });
+        }
+
         let gudangDipilih = "";
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -1179,6 +1254,19 @@
                 updateGreeting(userActive, gudangActive, roleActive);
                 updateTampilanArea(gudangActive);
                 aturDropdownRak(gudangActive); // <--- Memuat list rak sesuai gudang aktif
+
+                // --- MUAT MASTER STOK SPESIFIK SESUAI GUDANG AKTIF SAAT STARTUP ---
+                if (typeof muatMasterStokAktif === 'function') {
+                    muatMasterStokAktif().then(masterData => {
+                        if (masterData) {
+                            window.masterDataGlobal = masterData;
+                            console.log("Master stok berhasil dimuat khusus untuk gudang:", gudangActive);
+                        } else {
+                            console.warn("Master stok untuk gudang ini belum tersedia di cache lokal.");
+                            window.masterDataGlobal = null;
+                        }
+                    });
+                }
             }
             updateClock();
             setInterval(updateClock, 1000);
@@ -1321,8 +1409,8 @@
             document.getElementById('input-lokasi').focus();
         }
 
-        /**
-     * PENGELOLAAN TOMBOL KEMBALI HP (DOUBLE-TAP BACK TO EXIT) - STOMO
+    /**
+     * PENGELOLAAN TOMBOL KEMBALI HP (UNIVERSAL BACK BUTTON & DOUBLE-TAP TO EXIT) - STOMO
      */
     let backPressedOnce = false;
     let exitToastTimer = null;
@@ -1332,54 +1420,59 @@
     window.history.pushState({ page: 'main' }, '', window.location.href);
 
     window.addEventListener('popstate', function (event) {
-        // 1. Cek jika ada Modal atau Sub-Halaman (seperti Tentang Aplikasi atau Login) yang sedang terbuka
-        const tentangPage = document.getElementById('tentang-page');
-        const customModal = document.getElementById('customModal');
-        const pwaModal = document.getElementById('pwaInstallModal');
-        const loginModal = document.getElementById('loginModal');
+        // 1. PENCARIAN UNIVERSAL: Deteksi otomatis semua Modal atau Sub-Halaman yang sedang terbuka (tidak berkelas 'hidden')
+        // Mencakup elemen dengan kelas .modal atau ID yang berakhiran Modal, -page, dll.
+        const activeModalsOrPages = document.querySelectorAll('.modal:not(.hidden), [id$="Modal"]:not(.hidden), [id$="-page"]:not(.hidden)');
+        
+        let targetToClose = null;
 
-        let adaModalDitutup = false;
+        // Cari elemen aktif yang valid untuk ditutup (abaikan kontainer utama aplikasi)
+        for (let el of activeModalsOrPages) {
+            const elId = el.id || '';
+            // Lewati kontainer utama agar tidak tertutup
+            if (elId === 'app' || elId === 'main' || elId === 'loginModal') {
+                continue;
+            }
+            // Ambil sub-halaman atau modal aktif pertama yang ditemukan
+            if (elId.includes('page') || elId.includes('Modal') || el.classList.contains('modal')) {
+                targetToClose = el;
+                break; 
+            }
+        }
 
-        if (tentangPage && !tentangPage.classList.contains('hidden')) {
-            tentangPage.classList.add('hidden');
-            adaModalDitutup = true;
-        }
-        if (customModal && !customModal.classList.contains('hidden')) {
-            customModal.classList.add('hidden');
-            adaModalDitutup = true;
-        }
-        if (pwaModal && !pwaModal.classList.contains('hidden')) {
-            pwaModal.classList.add('hidden');
-            adaModalDitutup = true;
-        }
-
-        // Jika ada modal yang ditutup, tahan history agar tidak keluar aplikasi
-        if (adaModalDitutup) {
+        // Jika ada modal atau sub-halaman yang sedang terbuka, tutup elemen tersebut
+        if (targetToClose) {
+            targetToClose.classList.add('hidden');
+            // Tahan history agar aplikasi tidak keluar
             window.history.pushState({ page: 'app' }, '', window.location.href);
             return;
         }
 
         // 2. Jika pengguna sedang berada di tab selain tab 'cek' (misal: Lihat, Laporan, Setelan)
         if (typeof currentStomoTab !== 'undefined' && currentStomoTab !== 'cek') {
-            switchTab('cek', document.querySelector('.nav-item')); // Pindah kembali ke tab cek
+            const defaultNav = document.querySelector('.nav-item') || document.querySelector('[onclick*="cek"]');
+            if (typeof switchTab === 'function') {
+                switchTab('cek', defaultNav);
+            }
             currentStomoTab = 'cek';
             window.history.pushState({ page: 'cek' }, '', window.location.href);
             return;
         }
 
-        // 3. Jika sudah berada di Tab Cek (Halaman Utama Lapangan)
+        // 3. Jika sudah berada di Tab Cek & tidak ada modal/sub-halaman terbuka
         if (backPressedOnce) {
-            // Jika ditekan kedua kalinya dalam rentang < 2 detik, biarkan aplikasi tertutup/keluar
+            // Jika ditekan kedua kalinya dalam rentang < 2 detik, biarkan aplikasi keluar
             return; 
         }
 
-        // Tekanan pertama di Tab Cek: Tahan history & munculkan Toast Peringatan
+        // Tekanan pertama di Tab Cek: Tahan history & munculkan peringatan
         window.history.pushState({ page: 'main' }, '', window.location.href);
         backPressedOnce = true;
         
-        // Berikan peringatan menggunakan custom alert / notifikasi kecil khas StOMo
+        // Tampilkan peringatan (custom alert atau toast)
         if (typeof customAlert === 'function') {
-            // Atau tampilkan pesan toast jika ada
+            customAlert("Tekan sekali lagi untuk keluar dari aplikasi.");
+        } else {
             console.log("Tekan sekali lagi untuk keluar dari aplikasi StOMo.");
         }
 
