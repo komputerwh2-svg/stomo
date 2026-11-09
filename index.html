@@ -1395,10 +1395,10 @@
             areaElem.innerHTML = `STOK OPNAME : <span class="text-sky-600 dark:text-sky-400">${gudang}</span> ${statusBadge}`;
         }
 
-        // --- FUNGSI LOGOUT UNIVERSAL & PEMBERSIHAN DATA PERANGKAT ---
+        // --- FUNGSI LOGOUT UNIVERSAL & PEMBERSIHAN KHUSUS STOMO SAJA ---
         function logout() {
-            customConfirm("Keluar dari aplikasi StOMo? Semua data lokal di perangkat akan dibersihkan untuk keamanan sesi.", function() {
-                // 1. Bersihkan IndexedDB secara total (hasil_so & master_stok)
+            customConfirm("Keluar dari aplikasi StOMo? Seluruh data sesi dan cache StOMo di perangkat akan dibersihkan.", function() {
+                // 1. Bersihkan IndexedDB secara total khusus database StOMo (StOMoDB)
                 if (db) {
                     try {
                         const tx = db.transaction(["hasil_so", "master_stok"], "readwrite");
@@ -1406,15 +1406,20 @@
                         tx.objectStore("master_stok").clear();
                         
                         tx.oncomplete = function() {
-                            console.log("IndexedDB dibersihkan total saat logout.");
+                            console.log("IndexedDB StOMo dibersihkan total saat logout.");
                         };
                     } catch (err) {
                         console.error("Gagal membersihkan IndexedDB:", err);
                     }
                 }
 
-                // 2. Bersihkan seluruh localStorage
-                localStorage.clear();
+                // 2. Hapus HANYA item localStorage yang berawalan 'stomo_'
+                // (Ini memastikan aplikasi lain seperti logistik, kas, dll. tetap aman dan tidak terhapus)
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('stomo_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
 
                 // 3. Kosongkan variabel global penting
                 window.masterDataGlobal = null;
