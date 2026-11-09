@@ -1625,7 +1625,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // --- FUNGSI DOWNLOAD / TARIK MASTER STOK KE INDEXEDDB & PENANGANAN ERROR ---
+        // --- 1. FUNGSI UTAMA: KETIKA TOMBOL DOWNLOAD MASTER STOK DIKLIK ---
         function downloadMasterStok() {
             // 1. Ambil informasi sesi login petugas saat ini dari localStorage
             const gudangAktif = localStorage.getItem('stomo_gudang') || '';
@@ -1642,15 +1642,6 @@
                 return;
             }
 
-            // 2. Generate string tanggal hari ini dengan format YYYY_MM_DD
-            const now = new Date();
-            const YYYY = now.getFullYear();
-            const MM = String(now.getMonth() + 1).padStart(2, '0');
-            const DD = String(now.getDate()).padStart(2, '0');
-            const tanggalStr = `${YYYY}_${MM}_${DD}`;
-
-            console.log(`Memulai unduh master stok untuk Gudang: ${gudangAktif} (Tanggal: ${tanggalStr}) oleh: ${namaPetugas}`);
-
             // Cek ketersediaan Firebase
             if (typeof firebase === 'undefined' || !firebase.database) {
                 if (typeof customAlert === 'function') {
@@ -1659,7 +1650,54 @@
                 return;
             }
 
-            // 3. Tentukan Path Firebase RTDB secara spesifik berdasarkan nama gudang dan tanggal aktif
+            // Buka Modal Pemilihan Arsip Tanggal Master Stok
+            bukaModalArsipMaster(gudangAktif, namaPetugas, asalPetugas);
+        }
+
+        // --- 2. FUNGSI MENAMPILKAN MODAL & LIST TANGGAL ARSIP DARI FIREBASE ---
+        function bukaModalArsipMaster(gudangAktif, namaPetugas, asalPetugas) {
+            // Buat elemen modal secara dinamis jika belum ada di HTML, atau gunakan yang sudah ada
+            let modal = document.getElementById('modalArsipMaster');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalArsipMaster';
+                modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs hidden';
+                modal.innerHTML = `
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl w-11/12 max-w-md p-6 shadow-xl border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-black text-slate-800 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-down text-sky-500"></i> Pilih Arsip Master Stok
+                            </h3>
+                            <button onclick="tutupModalArsipMaster()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                            Gudang Aktif: <span id="labelGudangModal" class="font-bold text-sky-600 dark:text-sky-400"></span>. Silakan pilih tanggal master data yang ingin diunduh:
+                        </p>
+
+                        <div id="containerListArsipMaster" class="max-h-60 overflow-y-auto space-y-2 mb-4 pr-1">
+                            <div class="text-center py-6 text-slate-400 text-xs italic">Memuat daftar arsip master...</div>
+                        </div>
+
+                        <div class="flex justify-end gap-2">
+                            <button onclick="tutupModalArsipMaster()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">
+                                Batal
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            document.getElementById('labelGudangModal').innerText = gudangAktif;
+            modal.classList.remove('hidden');
+
+            const containerList = document.getElementById('containerListArsipMaster');
+            containerList.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat daftar arsip tanggal dari server...</div>`;
+
+            // Tentukan baseFolder seperti logika awal Anda untuk mencocokkan path Firebase
             let baseFolder = "";
             const gudangUpper = gudangAktif.toUpperCase().trim();
 
@@ -1677,6 +1715,86 @@
                 baseFolder = gudangAktif.replace(/\s+/g, '_');
             }
 
+            // Ambil daftar folder di stok_opname untuk mendeteksi tanggal arsip yang tersedia
+            firebase.database().ref(`stok_opname`).once('value').then(snap => {
+                const allData = snap.val();
+                containerList.innerHTML = '';
+
+                let daftarTanggalSet = new Set();
+
+                if (allData) {
+                    Object.keys(allData).forEach(folderKey => {
+                        // Cocokkan apakah folder memuat nama gudang yang sesuai
+                        if (folderKey.includes(baseFolder) || folderKey.toUpperCase().includes(gudangUpper.replace(/\s+/g, '_'))) {
+                            // Ekstrak tanggal di akhir string (format YYYY_MM_DD)
+                            let parts = folderKey.split('_');
+                            if (parts.length >= 3) {
+                                let tglStr = `${parts[parts.length-3]}_${parts[parts.length-2]}_${parts[parts.length-1]}`;
+                                if (/^\d{4}_\d{2}_\d{2}$/.test(tglStr)) {
+                                    daftarTanggalSet.add(tglStr);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Tambahkan juga tanggal hari ini secara default sebagai opsi teratas jika belum ada
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${String(now.getDate()).padStart(2, '0')}`;
+                daftarTanggalSet.add(todayStr);
+
+                let daftarTanggal = [...daftarTanggalSet].sort().reverse(); // Urutkan dari terbaru
+
+                if (daftarTanggal.length === 0) {
+                    containerList.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic">Tidak ada arsip tanggal ditemukan. Menggunakan tanggal hari ini.</div>`;
+                    let itemDiv = document.createElement('div');
+                    itemDiv.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 dark:hover:bg-sky-950/30 border border-slate-100 dark:border-slate-800 rounded-xl transition-colors cursor-pointer";
+                    itemDiv.innerHTML = `<div class="font-black text-xs text-slate-800 dark:text-slate-200">Hari Ini (${todayStr.replace(/_/g, '-')})</div><span class="px-2.5 py-1 bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 rounded-lg text-[10px] font-black">Pilih</span>`;
+                    itemDiv.onclick = () => {
+                        tutupModalArsipMaster();
+                        eksekusiDownloadMasterStok(todayStr, gudangAktif, namaPetugas, asalPetugas, baseFolder);
+                    };
+                    containerList.appendChild(itemDiv);
+                    return;
+                }
+
+                daftarTanggal.forEach(tglKey => {
+                    let tglFormat = tglKey.replace(/_/g, '-');
+                    let itemDiv = document.createElement('div');
+                    itemDiv.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 dark:hover:bg-sky-950/30 border border-slate-100 dark:border-slate-800 rounded-xl transition-colors cursor-pointer";
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-calendar-day text-sky-500 text-sm"></i>
+                            <div>
+                                <div class="font-black text-xs text-slate-800 dark:text-slate-200">Arsip Tanggal: ${tglFormat}</div>
+                                <div class="text-[10px] text-slate-400">Klik untuk unduh master gudang ${gudangAktif}</div>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 rounded-lg text-[10px] font-black">Pilih</span>
+                    `;
+
+                    itemDiv.onclick = () => {
+                        tutupModalArsipMaster();
+                        eksekusiDownloadMasterStok(tglKey, gudangAktif, namaPetugas, asalPetugas, baseFolder);
+                    };
+
+                    containerList.appendChild(itemDiv);
+                });
+            }).catch(err => {
+                console.error("Gagal mengambil daftar arsip:", err);
+                containerList.innerHTML = `<div class="text-center py-6 text-rose-500 text-xs">Gagal memuat daftar arsip dari server.</div>`;
+            });
+        }
+
+        function tutupModalArsipMaster() {
+            const modal = document.getElementById('modalArsipMaster');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // --- 3. EKSEKUSI UTAMA PENGAMBILAN DATA BERDASARKAN TANGGAL PILIHAN ---
+        function eksekusiDownloadMasterStok(tanggalStr, gudangAktif, namaPetugas, asalPetugas, baseFolder) {
+            console.log(`Memulai unduh master stok untuk Gudang: ${gudangAktif} (Tanggal: ${tanggalStr}) oleh: ${namaPetugas}`);
+
             let targetFirebasePath = "";
             let fallbackFirebasePath = "";
             if (baseFolder === 'stok_blok') {
@@ -1690,7 +1808,7 @@
             const fullFolderId = `${gudangClean}_${tanggalStr}`;
 
             if (typeof customAlert === 'function') {
-                customAlert(`Sedang mengunduh master stok Gudang [${gudangAktif}] untuk tanggal ${YYYY}-${MM}-${DD}...`);
+                customAlert(`Sedang mengunduh master stok Gudang [${gudangAktif}] untuk tanggal ${tanggalStr.replace(/_/g, '-')}...`);
             }
 
             // Eksekusi Ambil Data dari Firebase RTDB
@@ -1711,7 +1829,7 @@
                 .then(rawData => {
                     if (!rawData) {
                         if (typeof customAlert === 'function') {
-                            customAlert(`Download data stok gagal atau belum ada data stok yang diupload untuk gudang [${gudangAktif}] tanggal ${YYYY}-${MM}-${DD}.`);
+                            customAlert(`Download data stok gagal atau belum ada data stok yang diupload untuk gudang [${gudangAktif}] tanggal ${tanggalStr.replace(/_/g, '-')}.`);
                         }
                         return;
                     }
@@ -1728,18 +1846,15 @@
                                     let totalKrtBarang = 0;
 
                                     if (expData && typeof expData === 'object') {
-                                        // Telusuri setiap tanggal expired di bawah kode barang
                                         Object.keys(expData).forEach(expKey => {
                                             const detailExp = expData[expKey];
                                             if (detailExp && typeof detailExp === 'object') {
-                                                // Ambil nilai krt (mendukung huruf kecil maupun kapital)
                                                 let valKrt = parseInt(detailExp.krt || detailExp.KRT || 0, 10);
                                                 totalKrtBarang += valKrt;
                                             }
                                         });
                                     }
 
-                                    // Gunakan kunci unik gabungan blok dan kode barang
                                     const kunciUnik = `${namaBlok}_${kodeBarang}`.toUpperCase();
                                     
                                     dataMaster[kunciUnik] = {
@@ -1771,10 +1886,14 @@
                         console.log("Master stok berhasil disimpan ke IndexedDB.");
                         
                         // LANGSUNG TERAPKAN KE FORM & VARIABEL GLOBAL
-                        terapkanMasterKeForm(dataMaster, gudangAktif);
+                        if (typeof terapkanMasterKeForm === 'function') {
+                            terapkanMasterKeForm(dataMaster, gudangAktif);
+                        }
                         
                         // UPDATE TAMPILAN AREA AGAR BADGE BERUBAH JADI HIJAU
-                        updateTampilanArea(gudangAktif);
+                        if (typeof updateTampilanArea === 'function') {
+                            updateTampilanArea(gudangAktif);
+                        }
                     };
 
                     localStorage.setItem(`stomo_sync_info`, JSON.stringify({
@@ -1785,7 +1904,7 @@
                     }));
 
                     if (typeof customAlert === 'function') {
-                        customAlert(`Berhasil mengunduh Master Stok Gudang [${gudangAktif}] (${YYYY}-${MM}-${DD})! Data siap digunakan.`);
+                        customAlert(`Berhasil mengunduh Master Stok Gudang [${gudangAktif}] (${tanggalStr.replace(/_/g, '-')})! Data siap digunakan.`);
                     }
                 })
                 .catch(error => {
@@ -3006,43 +3125,77 @@
             // --- AMBIL DATA HASIL OPNAME DARI WH-3_BLOK JIKA DI WH-3 INDUK ---
             let rekapQtyBlokMap = {};
             if (isGudangWH3Induk) {
-                if (!window.dataHasilBlokGlobal && typeof firebase !== 'undefined' && firebase.database) {
+                if (window._gudangAktifTerakhir !== gudangAktif) {
+                    window.dataHasilBlokGlobal = null;
+                    window._gudangAktifTerakhir = gudangAktif;
+                }
+
+                if (!window.dataHasilBlokGlobal && !window.isFetchingBlokWH3 && typeof firebase !== 'undefined' && firebase.database) {
+                    window.isFetchingBlokWH3 = true;
+                    
                     firebase.database().ref(`stok_opname`).once('value').then(snap => {
                         const allStokOpname = snap.val();
-                        if (allStokOpname) {
-                            window.dataHasilBlokGlobal = {};
-                            window._petugasBlokList = "";
-                            let pSet = new Set();
+                        let tempEntriBlok = {}; // Untuk melacak (kode_rak_petugas)
+                        let pSet = new Set();
 
+                        if (allStokOpname) {
                             Object.keys(allStokOpname).forEach(folderKey => {
                                 if (folderKey.toUpperCase().includes('WH-3_BLOK') || folderKey.toUpperCase().includes('WH-3 BLOK')) {
                                     let folderData = allStokOpname[folderKey];
-                                    let targetHasilSo = folderData.hasil_so;
-
-                                    if (!targetHasilSo && typeof folderData === 'object') {
-                                        Object.keys(folderData).forEach(subKey => {
-                                            if (folderData[subKey] && folderData[subKey].hasil_so) {
-                                                let subHasilSo = folderData[subKey].hasil_so;
-                                                Object.keys(subHasilSo).forEach(soKey => {
-                                                    processItemSO(subHasilSo[soKey], pSet);
-                                                });
+                                    
+                                    function extractHasilSo(obj) {
+                                        if (!obj) return;
+                                        if (obj.hasil_so && typeof obj.hasil_so === 'object') {
+                                            Object.values(obj.hasil_so).forEach(itemSo => {
+                                                processItemWH3Induk(itemSo, pSet, tempEntriBlok);
+                                            });
+                                        }
+                                        Object.keys(obj).forEach(subKey => {
+                                            if (typeof obj[subKey] === 'object' && subKey !== 'hasil_so') {
+                                                extractHasilSo(obj[subKey]);
                                             }
                                         });
-                                    } else if (targetHasilSo) {
-                                        Object.keys(targetHasilSo).forEach(soKey => {
-                                            processItemSO(targetHasilSo[soKey], pSet);
-                                        });
                                     }
+                                    
+                                    extractHasilSo(folderData);
                                 }
                             });
-
-                            if (pSet.size > 0) {
-                                window._petugasBlokList = [...pSet].sort().join(' & ');
-                            }
-
-                            // Render ulang tabel secara otomatis setelah data blok terambil
-                            renderTabelLaporan(masterData, semuaSO, gudangAktif, tanggalArsip);
                         }
+
+                        // SETELAH DIDAPAT PER PETUGAS, REKAP PER KODE BARANG TANPA MENGGANDAKAN CROSS-CHECK PETUGAS BERBEDA
+                        let mapRekapBersih = {};
+                        let tempPerRak = {};
+
+                        Object.keys(tempEntriBlok).forEach(entriKey => {
+                            let [kode, rak] = entriKey.split('_');
+                            let valKrt = tempEntriBlok[entriKey];
+
+                            let rakKey = `${kode}_${rak}`;
+                            if (!tempPerRak[rakKey]) {
+                                tempPerRak[rakKey] = valKrt;
+                            } else {
+                                // Ambil nilai terbesar/representatif per rak jika ada input dari 2 petugas berbeda (cross-check)
+                                tempPerRak[rakKey] = Math.max(tempPerRak[rakKey], valKrt);
+                            }
+                        });
+
+                        // Total kan seluruh rak untuk kode barang tersebut (BLOK 18CD + BLOK 18F + BLOK RETUR)
+                        Object.keys(tempPerRak).forEach(rakKey => {
+                            let kode = rakKey.split('_')[0];
+                            if (!mapRekapBersih[kode]) mapRekapBersih[kode] = 0;
+                            mapRekapBersih[kode] += tempPerRak[rakKey];
+                        });
+
+                        window.dataHasilBlokGlobal = mapRekapBersih;
+                        if (pSet.size > 0) {
+                            window._petugasBlokList = [...pSet].sort().join(' & ');
+                        }
+                        window.isFetchingBlokWH3 = false;
+
+                        renderTabelLaporan(masterData, semuaSO, gudangAktif, tanggalArsip);
+                    }).catch(err => {
+                        window.isFetchingBlokWH3 = false;
+                        console.error("Gagal memuat data blok:", err);
                     });
                 }
 
@@ -3051,19 +3204,23 @@
                 }
             }
 
-            // Helper kecil untuk akumulasi item SO blok
-            function processItemSO(itemSo, pSet) {
+            // Helper khusus WH-3 Induk untuk akumulasi per petugas dulu
+            function processItemWH3Induk(itemSo, pSet, tempEntriBlok) {
+                if (!itemSo || typeof itemSo !== 'object') return;
                 let kBarang = String(itemSo.kode_barang || '').trim().toUpperCase();
+                let rak = String(itemSo.lokasi_rak || 'UMUM').trim().toUpperCase();
                 let qObj = parseBosnetQty(itemSo.qty_teks);
                 let kKrt = parseInt(itemSo.qty_krt || qObj.krt || 0, 10);
-                let pName = String(itemSo.nama_petugas || itemSo.user_id || '').trim().toUpperCase();
+                let pName = String(itemSo.nama_petugas || itemSo.user_id || 'UMUM').trim().toUpperCase();
                 
-                if (pName) pSet.add(pName);
+                if (pName && pName !== 'UMUM') pSet.add(pName);
                 if (kBarang) {
-                    if (!window.dataHasilBlokGlobal[kBarang]) {
-                        window.dataHasilBlokGlobal[kBarang] = 0;
+                    let key = `${kBarang}_${rak}_${pName}`;
+                    if (!tempEntriBlok[key]) {
+                        tempEntriBlok[key] = 0;
                     }
-                    window.dataHasilBlokGlobal[kBarang] += kKrt;
+                    // Jika petugas yang sama menginput ganda di rak yang sama, jumlahkan
+                    tempEntriBlok[key] += kKrt;
                 }
             }
 
@@ -3082,7 +3239,6 @@
                     }
                 });
 
-                // Jika masterData berbentuk nested object per sub-blok (seperti struktur master blok Firebase/IndexedDB)
                 if (typeof masterData === 'object' && !Array.isArray(masterData)) {
                     Object.keys(masterData).forEach(namaBlok => {
                         let isiBlok = masterData[namaBlok];
@@ -3091,7 +3247,6 @@
                                 let item = isiBlok[kodeBrg];
                                 let kClean = String(kodeBrg || '').trim().toUpperCase();
                                 
-                                // Pengaman: Abaikan jika key adalah label teks atau mengandung spasi/kata kunci sistem
                                 if (!kClean || kClean === 'BLOK' || kClean === 'KODE' || kClean === 'K_AKHIR' || kClean === 'NAMA' || kClean.includes(' ')) return;
 
                                 let kVal = parseInt(item.krt || item.KRT || 0, 10);
@@ -3117,7 +3272,6 @@
                 if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) semuaKodeBarang.add(k);
             });
 
-            // Jika gudang blok, masukkan juga seluruh kode valid dari globalMasterStokBlokMap
             if (isGudangBlok) {
                 Object.keys(globalMasterStokBlokMap).forEach(k => {
                     if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) {
@@ -3134,7 +3288,6 @@
                 if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA') masterMap[k] = m;
             });
 
-            // Jika di gudang blok, pastikan masterMap juga memetakan data dari objek bersarang sub-blok
             if (isGudangBlok && typeof masterData === 'object') {
                 Object.keys(masterData).forEach(namaBlok => {
                     let isiBlok = masterData[namaBlok];
@@ -3151,7 +3304,6 @@
                 });
             }
 
-            // Helper untuk parsing format Bosnet
             const parseBosnetQty = (val) => {
                 if (!val || typeof val !== 'string') return { krt: 0, ball: 0, rtg: 0, pcs: 0 };
                 let p = val.split('/');
@@ -3166,39 +3318,99 @@
             let kolomUnikMap = {};
             let rekapData = {};
 
-            semuaSO.forEach(so => {
-                let kode = String(so.kode_barang || '').trim().toUpperCase();
-                let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
-                if (!kode) return;
+            // --- PERLAKUAN KHUSUS BERDASARKAN JENIS GUDANG ---
+            if (isGudangBlok) {
+                let trackingEntriPetugas = {};
 
-                let kolomKey = `${rak}`;
-                kolomUnikMap[kolomKey] = { rak: rak };
+                semuaSO.forEach(so => {
+                    let kode = String(so.kode_barang || '').trim().toUpperCase();
+                    let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
+                    if (!kode) return;
 
-                if (!rekapData[kode]) rekapData[kode] = {};
-                
-                let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
-                let qObj = parseBosnetQty(so.qty_teks);
-                let valKrt = (parseInt(so.qty_krt) || qObj.krt);
-                let valBall = (parseInt(so.qty_ball) || qObj.ball);
-                let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
-                let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+                    let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
+                    let kolomKey = `${rak}`;
 
-                if (!rekapData[kode][kolomKey]) {
-                    rekapData[kode][kolomKey] = { 
-                        petugasSet: new Set([ptg]), 
-                        krt: valKrt, 
-                        ball: valBall, 
-                        rtg: valRtg, 
-                        pcs: valPcs 
-                    };
-                } else {
-                    rekapData[kode][kolomKey].petugasSet.add(ptg);
-                    rekapData[kode][kolomKey].krt += valKrt;
-                    rekapData[kode][kolomKey].ball += valBall;
-                    rekapData[kode][kolomKey].rtg += valRtg;
-                    rekapData[kode][kolomKey].pcs += valPcs;
-                }
-            });
+                    if (!kolomUnikMap[kolomKey]) {
+                        kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
+                    }
+                    if (ptg) kolomUnikMap[kolomKey].petugasSet.add(ptg);
+
+                    if (!rekapData[kode]) rekapData[kode] = {};
+
+                    let qObj = parseBosnetQty(so.qty_teks);
+                    let valKrt = (parseInt(so.qty_krt) || qObj.krt);
+                    let valBall = (parseInt(so.qty_ball) || qObj.ball);
+                    let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
+                    let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+
+                    let entriKey = `${kode}_${rak}_${ptg}`;
+
+                    if (!trackingEntriPetugas[entriKey]) {
+                        trackingEntriPetugas[entriKey] = { krt: valKrt, ball: valBall, rtg: valRtg, pcs: valPcs };
+                    } else {
+                        trackingEntriPetugas[entriKey].krt += valKrt;
+                        trackingEntriPetugas[entriKey].ball += valBall;
+                        trackingEntriPetugas[entriKey].rtg += valRtg;
+                        trackingEntriPetugas[entriKey].pcs += valPcs;
+                    }
+                });
+
+                Object.keys(trackingEntriPetugas).forEach(entriKey => {
+                    let parts = entriKey.split('_');
+                    let kode = parts[0];
+                    let rak = parts[1];
+                    let dataPtg = trackingEntriPetugas[entriKey];
+                    let kolomKey = rak;
+
+                    if (!rekapData[kode][kolomKey]) {
+                        rekapData[kode][kolomKey] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
+                    } else {
+                        rekapData[kode][kolomKey].krt = Math.max(rekapData[kode][kolomKey].krt, dataPtg.krt);
+                        rekapData[kode][kolomKey].ball = Math.max(rekapData[kode][kolomKey].ball, dataPtg.ball);
+                        rekapData[kode][kolomKey].rtg = Math.max(rekapData[kode][kolomKey].rtg, dataPtg.rtg);
+                        rekapData[kode][kolomKey].pcs = Math.max(rekapData[kode][kolomKey].pcs, dataPtg.pcs);
+                    }
+                });
+
+            } else {
+                semuaSO.forEach(so => {
+                    let kode = String(so.kode_barang || '').trim().toUpperCase();
+                    let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
+                    if (!kode) return;
+
+                    let kolomKey = `${rak}`;
+                    if (!kolomUnikMap[kolomKey]) {
+                        kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
+                    }
+                    
+                    let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
+                    if (ptg) kolomUnikMap[kolomKey].petugasSet.add(ptg);
+
+                    if (!rekapData[kode]) rekapData[kode] = {};
+                    
+                    let qObj = parseBosnetQty(so.qty_teks);
+                    let valKrt = (parseInt(so.qty_krt) || qObj.krt);
+                    let valBall = (parseInt(so.qty_ball) || qObj.ball);
+                    let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
+                    let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+
+                    if (!rekapData[kode][kolomKey]) {
+                        rekapData[kode][kolomKey] = { 
+                            petugasSet: new Set([ptg]), 
+                            krt: valKrt, 
+                            ball: valBall, 
+                            rtg: valRtg, 
+                            pcs: valPcs 
+                        };
+                    } else {
+                        kolomUnikMap[kolomKey].petugasSet.add(ptg);
+                        rekapData[kode][kolomKey].krt = valKrt;
+                        rekapData[kode][kolomKey].ball = valBall;
+                        rekapData[kode][kolomKey].rtg = valRtg;
+                        rekapData[kode][kolomKey].pcs = valPcs;
+                    }
+                });
+            }
 
             let daftarKolom = Object.keys(kolomUnikMap).sort();
 
@@ -3232,7 +3444,12 @@
             if (isGudangWH3Induk) {
                 html += `
                     <th class="p-3 text-center min-w-[110px]">Stok Bosnet</th>
-                    <th class="p-3 text-center min-w-[110px] bg-amber-50/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">Stok Blok</th>
+                    <th class="p-3 text-center min-w-[140px] bg-amber-50/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                        <div class="text-[9px] font-black flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-users text-[8px]"></i> ${window._petugasBlokList || 'PETUGAS BLOK'}
+                        </div>
+                        <span class="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 px-1.5 py-0.2 rounded text-[8px] font-extrabold inline-block mt-0.5">[STOK BLOK]</span>
+                    </th>
                 `;
             } else if (isGudangBlok) {
                 html += `
@@ -3245,14 +3462,8 @@
             }
 
             daftarKolom.forEach(kolomKey => {
-                let petugasDiRak = new Set();
-                semuaSO.forEach(so => {
-                    let r = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
-                    if (r === kolomKey) {
-                        petugasDiRak.add(String(so.nama_petugas || so.user_id || '').trim().toUpperCase());
-                    }
-                });
-                let namaPtgHeader = [...petugasDiRak].sort().join(' & ');
+                let infoKolom = kolomUnikMap[kolomKey];
+                let namaPtgHeader = [...infoKolom.petugasSet].sort().join(' & ');
 
                 html += `
                     <th class="p-3 text-center bg-sky-50/70 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 min-w-[140px]">
