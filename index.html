@@ -1299,7 +1299,7 @@
             openSubPage('tentang-page');
         }
 
-        // TAHAP 1: PILIH GUDANG
+        // --- TAHAP 1: PILIH GUDANG ---
         function pilihGudang(namaGudang) {
             gudangDipilih = namaGudang;
             document.getElementById('label-gudang-terpilih').innerText = namaGudang;
@@ -1313,7 +1313,7 @@
             document.getElementById('step-pilih-gudang').classList.remove('hidden');
         }
 
-        // TAHAP 2: PROSES MASUK FINAL DENGAN VALIDASI ASAL PETUGAS
+        // --- TAHAP 2: PROSES MASUK FINAL DENGAN VALIDASI ASAL PETUGAS ---
         function prosesLoginFinal() {
             const user = document.getElementById('user-petugas').value.trim().toUpperCase();
             const role = document.getElementById('role-petugas').value;
@@ -1394,12 +1394,34 @@
             areaElem.innerHTML = `STOK OPNAME : <span class="text-sky-600 dark:text-sky-400">${gudang}</span> ${statusBadge}`;
         }
 
-        // Fungsi Logout dengan Custom Confirm Modal
+        // --- FUNGSI LOGOUT UNIVERSAL & PEMBERSIHAN DATA PERANGKAT ---
         function logout() {
-            customConfirm("Keluar dari aplikasi StOMo?", function() {
-                localStorage.removeItem('stomo_user');
-                localStorage.removeItem('stomo_gudang');
-                localStorage.removeItem('stomo_role');
+            customConfirm("Keluar dari aplikasi StOMo? Semua data lokal di perangkat akan dibersihkan untuk keamanan sesi.", function() {
+                // 1. Bersihkan IndexedDB secara total (hasil_so & master_stok)
+                if (db) {
+                    try {
+                        const tx = db.transaction(["hasil_so", "master_stok"], "readwrite");
+                        tx.objectStore("hasil_so").clear();
+                        tx.objectStore("master_stok").clear();
+                        
+                        tx.oncomplete = function() {
+                            console.log("IndexedDB dibersihkan total saat logout.");
+                        };
+                    } catch (err) {
+                        console.error("Gagal membersihkan IndexedDB:", err);
+                    }
+                }
+
+                // 2. Bersihkan seluruh localStorage
+                localStorage.clear();
+
+                // 3. Kosongkan variabel global penting
+                window.masterDataGlobal = null;
+                window.dataHasilBlokGlobal = null;
+                window._gudangAktifTerakhir = null;
+                window._petugasBlokList = null;
+
+                // 4. Muat ulang halaman ke kondisi bersih (memunculkan modal login)
                 location.reload();
             }, "KONFIRMASI KELUAR");
         }
