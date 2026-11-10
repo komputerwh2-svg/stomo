@@ -400,6 +400,11 @@
                 <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-500 flex items-center justify-center mr-3"><i class="fa-solid fa-power-off"></i></div>
                 <div class="flex-grow"><h4 class="text-xs font-bold text-red-500 uppercase tracking-wide">Keluar Akun</h4></div>
             </div>
+
+            <!-- Watermark Copyright di Tengah -->
+          <div class="text-center py-4">
+            <p class="text-[9px] text-gray-400 dark:text-slate-600 font-bold uppercase tracking-widest">© 2026 Nying_Nying Project</p>
+          </div>
         </section>
     </main>
 
@@ -677,10 +682,25 @@
                 
                 <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-6">
                     
-                    <!-- VERSION 0.1.2 (TERBARU) -->
+                    <!-- VERSION 0.1.3 (TERBARU) -->
                     <div class="timeline-item border-l-2 border-sky-500 pl-4 relative">
                         <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-sky-600 dark:bg-sky-500 animate-pulse"></div>
-                        <span class="text-xs font-black text-sky-600 dark:text-sky-400">v0.1.2 | 06 November 2026 (Terbaru)</span>
+                        <span class="text-xs font-black text-sky-600 dark:text-sky-400">v0.1.3 | 10 November 2026 (Terbaru)</span>
+                        <ul class="text-xs text-slate-500 dark:text-slate-400 mt-2 list-disc ml-4 space-y-1.5 leading-relaxed">
+                            <li><strong>Format Tanggal Standar dd/mm/yyyy:</strong> Pembaruan label pilihan arsip Master Stok serta notifikasi unduh/unggah menjadi format <code>Stok Bosnet : dd/mm/yyyy</code>.</li>
+                            <li><strong>Ekspor Excel Multi-Sheet:</strong> Penyempurnaan laporan Excel menjadi 2 sheet (Sheet 1: Laporan Gabungan lengkap per rak, Sheet 2: Hasil SO ringkas dengan kolom Stok Fisik, Selisih, dan Keterangan) lengkap dengan baris judul dinamis dan tanggal SO.</li>
+                            <li><strong>Layout Responsif 2 Baris (Tab Lihat & Riwayat):</strong> Perombakan tata letak UI menjadi dua baris sejajar yang rapi di layar ponsel (Baris atas: nomor, lokasi rak, & tombol aksi centang/silang berdampingan; Baris bawah: kode barang & qty sejajar lurus ke kiri).</li>
+                            <li><strong>Penguncian Baris Data Valid:</strong> Penerapan sistem keamanan di Tab Lihat di mana data yang sudah berstatus <em>valid</em> (centang hijau) dikunci dan tidak dapat diklik untuk membuka modal edit.</li>
+                            <li><strong>Modal Edit Universal & Parser Tangguh:</strong> Penyesuaian modal edit agar berlaku untuk semua jenis gudang dengan dukungan *parser* nilai kuantitas otomatis serta indikator warna latar belakang card yang dinamis.</li>
+                            <li><strong>Pembersihan Sesi Logout Terisolasi:</strong> Optimalisasi fungsi *logout* agar spesifik menghapus data lokal berprefiks <code>stomo_</code> dan IndexedDB StOMo tanpa memengaruhi data aplikasi lain di domain yang sama.</li>
+                            <li><strong>Perbaikan Cache Ikon PWA Windows:</strong> Peningkatan penanganan ikon desktop PWA menggunakan tag meta favicon dan pengaturan *Icon Cache*.</li>
+                        </ul>
+                    </div>
+
+                    <!-- VERSION 0.1.2 -->
+                    <div class="timeline-item border-l-2 border-slate-300 dark:border-slate-700 pl-4 relative">
+                        <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+                        <span class="text-xs font-black text-slate-500 dark:text-slate-400">v0.1.2 | 06 November 2026</span>
                         <ul class="text-xs text-slate-500 dark:text-slate-400 mt-2 list-disc ml-4 space-y-1.5 leading-relaxed">
                             <li><strong>Laporan Gabungan per Gudang:</strong> Rekapitulasi otomatis data opname fisik seluruh petugas cek berdasarkan gudang aktif.</li>
                             <li><strong>Filter Kolom per Lokasi Rak:</strong> Pengelompokan dinamis header petugas & rak tanpa akumulasi duplikasi ganda Qty per barang.</li>
@@ -701,6 +721,16 @@
                             <li><strong>Filter Master Excel Bosnet:</strong> Validasi kolom Produk, Nama, Lokasi, serta mengabaikan baris dengan nilai K Akhir <code>0/0/0/0</code>.</li>
                             <li><strong>Offline-First & IndexedDB:</strong> Penyimpanan catatan lokal dan sinkronisasi manual ke Firebase RTDB pada halaman Lihat.</li>
                             <li><strong>Master Data Autocomplete:</strong> Fitur download master data dari server untuk acuan pencarian kode barang.</li>
+                        </ul>
+                    </div>
+
+                    <!-- VERSION 0.0.1 -->
+                    <div class="timeline-item border-l-2 border-slate-300 dark:border-slate-700 pl-4 relative">
+                        <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+                        <span class="text-xs font-black text-slate-500 dark:text-slate-400">v0.0.1 | 04 November 2026</span>
+                        <ul class="text-xs text-slate-500 dark:text-slate-400 mt-2 list-disc ml-4 space-y-1.5 leading-relaxed">
+                            <li><strong>Pembuatan Struktur Proyek:</strong> Inisialisasi struktur folder dan file untuk pengembangan aplikasi.</li>
+                            <li><strong>Rancangan Awal Aplikasi:</strong> Pemahaman awal tentang fitur dan fungsionalitas yang akan diterapkan.</li>
                         </ul>
                     </div>
 
@@ -818,9 +848,9 @@
     <script>
         // --- KONFIGURASI VERSI APLIKASI CENTRAL ---
         const APP_CONFIG = {
-            version: "v0.1.2",
+            version: "v0.1.3",
             status: "beta",
-            lastUpdate: "06 November 2026"
+            lastUpdate: "10 November 2026"
         };
 
         // Jalankan otomatis saat halaman selesai dimuat
@@ -828,7 +858,7 @@
             // 1. Set Header Versi
             const elHeader = document.getElementById('app-version-header');
             if (elHeader) {
-                elHeader.innerText = `[StOMo] ${APP_CONFIG.version}`;
+                elHeader.innerText = `${APP_CONFIG.version} ${APP_CONFIG.status}`;
             }
 
             // 2. Set Versi di Sub-Halaman Tentang
@@ -1595,7 +1625,7 @@
             }
         }
 
-        // --- PROSES UPLOAD & FILTER EXCEL BOSNET MULTI-GUDANG KE RTDB (DENGAN IDENTIFIER TANGGAL) ---
+        // --- PROSES UPLOAD & FILTER EXCEL BOSNET MULTI-GUDANG KE RTDB (FORMAT TANGGAL DD/MM/YYYY) ---
         function prosesUploadExcel() {
             const fileInput = document.getElementById('fileBosnetInput');
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
@@ -1607,21 +1637,25 @@
 
             // 1. Ekstrak Tanggal dari Nama File (misal: Stock_20261105-1146wh2 -> 2026_11_05)
             let tanggalStr = "";
+            let YYYY = "", MM = "", DD = "";
             const matchTanggal = namaFile.match(/\b(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
 
             if (matchTanggal) {
-                const YYYY = matchTanggal[1];
-                const MM = matchTanggal[2];
-                const DD = matchTanggal[3];
+                YYYY = matchTanggal[1];
+                MM = matchTanggal[2];
+                DD = matchTanggal[3];
                 tanggalStr = `${YYYY}_${MM}_${DD}`;
             } else {
                 // Fallback jika nama file tidak mengandung pola YYYYMMDD, gunakan tanggal hari ini
                 const now = new Date();
-                const YYYY = now.getFullYear();
-                const MM = String(now.getMonth() + 1).padStart(2, '0');
-                const DD = String(now.getDate()).padStart(2, '0');
+                YYYY = String(now.getFullYear());
+                MM = String(now.getMonth() + 1).padStart(2, '0');
+                DD = String(now.getDate()).padStart(2, '0');
                 tanggalStr = `${YYYY}_${MM}_${DD}`;
             }
+
+            // Format tampilan tanggal dd/mm/yyyy (contoh: 05/11/2026 atau 10/11/2026)
+            const tglFormatted = `${DD}/${MM}/${YYYY}`;
 
             const reader = new FileReader();
 
@@ -1718,7 +1752,8 @@
                         const dbRef = firebase.database().ref(`stok_opname/${fullFolderId}/master_data`);
                         
                         let promise = dbRef.set(infoGudang.items).then(() => {
-                            daftarGudangBerhasil.push(`${infoGudang.namaAsli} (${tanggalStr})`);
+                            // Format pesan per gudang menggunakan format dd/mm/yyyy
+                            daftarGudangBerhasil.push(`${infoGudang.namaAsli}`);
                             // Simpan ke localStorage dengan key gudang + tanggal
                             localStorage.setItem(`stomo_master_${fullFolderId}`, JSON.stringify(infoGudang.items));
                             // Simpan juga sebagai cache master aktif gudang tersebut
@@ -1729,7 +1764,7 @@
 
                     Promise.all(uploadPromises)
                         .then(() => {
-                            customAlert(`Berhasil mengunggah total ${totalItemValid} item untuk gudang:\n${daftarGudangBerhasil.join('\n')}!`);
+                            customAlert(`Berhasil mengunggah total ${totalItemValid} item Stok Bosnet ${tglFormatted} untuk gudang:\n${daftarGudangBerhasil.join('\n')}!`);
                             if (typeof tutupModalUpload === 'function') tutupModalUpload();
                         })
                         .catch(err => {
@@ -1775,7 +1810,7 @@
             bukaModalArsipMaster(gudangAktif, namaPetugas, asalPetugas);
         }
 
-        // --- 2. FUNGSI MENAMPILKAN MODAL & LIST TANGGAL ARSIP DARI FIREBASE ---
+        // --- 2. FUNGSI MENAMPILKAN MODAL & LIST TANGGAL ARSIP DARI FIREBASE (FORMAT DD/MM/YYYY) ---
         function bukaModalArsipMaster(gudangAktif, namaPetugas, asalPetugas) {
             // Buat elemen modal secara dinamis jika belum ada di HTML, atau gunakan yang sudah ada
             let modal = document.getElementById('modalArsipMaster');
@@ -1787,7 +1822,7 @@
                     <div class="bg-white dark:bg-slate-900 rounded-2xl w-11/12 max-w-md p-6 shadow-xl border border-slate-100 dark:border-slate-800">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-black text-slate-800 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
-                                <i class="fa-solid fa-cloud-arrow-down text-sky-500"></i> Pilih Arsip Master Stok
+                                <i class="fa-solid fa-cloud-arrow-down text-sky-500"></i> Pilih Master Stok Bosnet
                             </h3>
                             <button onclick="tutupModalArsipMaster()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                                 <i class="fa-solid fa-xmark text-lg"></i>
@@ -1818,7 +1853,6 @@
             const containerList = document.getElementById('containerListArsipMaster');
             containerList.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat daftar arsip tanggal dari server...</div>`;
 
-            // Tentukan baseFolder seperti logika awal Anda untuk mencocokkan path Firebase
             let baseFolder = "";
             const gudangUpper = gudangAktif.toUpperCase().trim();
 
@@ -1836,7 +1870,6 @@
                 baseFolder = gudangAktif.replace(/\s+/g, '_');
             }
 
-            // Ambil daftar folder di stok_opname untuk mendeteksi tanggal arsip yang tersedia
             firebase.database().ref(`stok_opname`).once('value').then(snap => {
                 const allData = snap.val();
                 containerList.innerHTML = '';
@@ -1845,9 +1878,7 @@
 
                 if (allData) {
                     Object.keys(allData).forEach(folderKey => {
-                        // Cocokkan apakah folder memuat nama gudang yang sesuai
                         if (folderKey.includes(baseFolder) || folderKey.toUpperCase().includes(gudangUpper.replace(/\s+/g, '_'))) {
-                            // Ekstrak tanggal di akhir string (format YYYY_MM_DD)
                             let parts = folderKey.split('_');
                             if (parts.length >= 3) {
                                 let tglStr = `${parts[parts.length-3]}_${parts[parts.length-2]}_${parts[parts.length-1]}`;
@@ -1859,18 +1890,21 @@
                     });
                 }
 
-                // Tambahkan juga tanggal hari ini secara default sebagai opsi teratas jika belum ada
                 const now = new Date();
                 const todayStr = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${String(now.getDate()).padStart(2, '0')}`;
                 daftarTanggalSet.add(todayStr);
 
-                let daftarTanggal = [...daftarTanggalSet].sort().reverse(); // Urutkan dari terbaru
+                let daftarTanggal = [...daftarTanggalSet].sort().reverse();
 
                 if (daftarTanggal.length === 0) {
                     containerList.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic">Tidak ada arsip tanggal ditemukan. Menggunakan tanggal hari ini.</div>`;
                     let itemDiv = document.createElement('div');
                     itemDiv.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 dark:hover:bg-sky-950/30 border border-slate-100 dark:border-slate-800 rounded-xl transition-colors cursor-pointer";
-                    itemDiv.innerHTML = `<div class="font-black text-xs text-slate-800 dark:text-slate-200">Hari Ini (${todayStr.replace(/_/g, '-')})</div><span class="px-2.5 py-1 bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 rounded-lg text-[10px] font-black">Pilih</span>`;
+                    
+                    let pTgl = todayStr.split('_');
+                    let formatTglDDMMYYYY = `${pTgl[2]}/${pTgl[1]}/${pTgl[0]}`;
+
+                    itemDiv.innerHTML = `<div class="font-black text-xs text-slate-800 dark:text-slate-200">Hari Ini (${formatTglDDMMYYYY})</div><span class="px-2.5 py-1 bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 rounded-lg text-[10px] font-black">Pilih</span>`;
                     itemDiv.onclick = () => {
                         tutupModalArsipMaster();
                         eksekusiDownloadMasterStok(todayStr, gudangAktif, namaPetugas, asalPetugas, baseFolder);
@@ -1880,14 +1914,17 @@
                 }
 
                 daftarTanggal.forEach(tglKey => {
-                    let tglFormat = tglKey.replace(/_/g, '-');
+                    // Ubah format YYYY_MM_DD menjadi DD/MM/YYYY
+                    let parts = tglKey.split('_');
+                    let formatTglDDMMYYYY = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : tglKey.replace(/_/g, '/');
+
                     let itemDiv = document.createElement('div');
                     itemDiv.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 dark:hover:bg-sky-950/30 border border-slate-100 dark:border-slate-800 rounded-xl transition-colors cursor-pointer";
                     itemDiv.innerHTML = `
                         <div class="flex items-center gap-2.5">
                             <i class="fa-solid fa-calendar-day text-sky-500 text-sm"></i>
                             <div>
-                                <div class="font-black text-xs text-slate-800 dark:text-slate-200">Arsip Tanggal: ${tglFormat}</div>
+                                <div class="font-black text-xs text-slate-800 dark:text-slate-200">Stok Bosnet : ${formatTglDDMMYYYY}</div>
                                 <div class="text-[10px] text-slate-400">Klik untuk unduh master gudang ${gudangAktif}</div>
                             </div>
                         </div>
@@ -1912,7 +1949,7 @@
             if (modal) modal.classList.add('hidden');
         }
 
-        // --- 3. EKSEKUSI UTAMA PENGAMBILAN DATA BERDASARKAN TANGGAL PILIHAN ---
+        // --- 3. EKSEKUSI UTAMA PENGAMBILAN DATA BERDASARKAN TANGGAL PILIHAN (REVISI ALERT) ---
         function eksekusiDownloadMasterStok(tanggalStr, gudangAktif, namaPetugas, asalPetugas, baseFolder) {
             console.log(`Memulai unduh master stok untuk Gudang: ${gudangAktif} (Tanggal: ${tanggalStr}) oleh: ${namaPetugas}`);
 
@@ -1928,8 +1965,13 @@
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
             const fullFolderId = `${gudangClean}_${tanggalStr}`;
 
+            // Konversi tanggal dari YYYY_MM_DD (atau YYYY-MM-DD) menjadi DD/MM/YYYY
+            let cleanTgl = tanggalStr.replace(/-/g, '_');
+            let pTgl = cleanTgl.split('_');
+            let formatTglDDMMYYYY = pTgl.length === 3 ? `${pTgl[2]}/${pTgl[1]}/${pTgl[0]}` : tanggalStr;
+
             if (typeof customAlert === 'function') {
-                customAlert(`Sedang mengunduh master stok Gudang [${gudangAktif}] untuk tanggal ${tanggalStr.replace(/_/g, '-')}...`);
+                customAlert(`Sedang mengunduh Stok Bosnet ${formatTglDDMMYYYY} gudang [${gudangAktif}]...`);
             }
 
             // Eksekusi Ambil Data dari Firebase RTDB
@@ -1950,7 +1992,7 @@
                 .then(rawData => {
                     if (!rawData) {
                         if (typeof customAlert === 'function') {
-                            customAlert(`Download data stok gagal atau belum ada data stok yang diupload untuk gudang [${gudangAktif}] tanggal ${tanggalStr.replace(/_/g, '-')}.`);
+                            customAlert(`Download data stok gagal atau belum ada data stok yang diupload untuk Stok Bosnet ${formatTglDDMMYYYY} gudang [${gudangAktif}].`);
                         }
                         return;
                     }
@@ -2025,7 +2067,7 @@
                     }));
 
                     if (typeof customAlert === 'function') {
-                        customAlert(`Berhasil mengunduh Master Stok Gudang [${gudangAktif}] (${tanggalStr.replace(/_/g, '-')})! Data siap digunakan.`);
+                        customAlert(`Stok Bosnet ${formatTglDDMMYYYY} gudang [${gudangAktif}] berhasil didownload!`);
                     }
                 })
                 .catch(error => {
@@ -2283,7 +2325,17 @@
             datalistRak.innerHTML = '';
             inputRak.value = '';
 
-            if (gudangUpper === 'BLOK-1' || gudangUpper === 'WH-1 BLOK-1') {
+            // Penanganan khusus untuk WH-1 BLOK-1 agar menampilkan pilihan ruang
+            if (gudangUpper === 'WH-1 BLOK-1' || gudangUpper === 'WH-1_BLOK-1') {
+                if (containerRak) containerRak.classList.remove('hidden');
+                let daftarOpsi = ['RUANG KIRI', 'RUANG TENGAH', 'RUANG KANAN'];
+
+                daftarOpsi.forEach(item => {
+                    let opt = document.createElement('option');
+                    opt.value = item;
+                    datalistRak.appendChild(opt);
+                });
+            } else if (gudangUpper === 'BLOK-1') {
                 if (containerRak) containerRak.classList.add('hidden');
                 inputRak.value = '-';
             } else {
@@ -2644,7 +2696,7 @@
             }
         }
 
-        // --- FUNGSI RENDER & KELOLA HALAMAN LIHAT (FORMAT 2 BARIS & MODAL EDIT AMAN) ---
+        // --- FUNGSI RENDER & KELOLA HALAMAN LIHAT (PENYESUAIAN WARNA STATUS MERAH/HIJAU) ---
         function muatDaftarHasilCek() {
             if (!db) return;
 
@@ -2709,39 +2761,51 @@
                         const formatSatuan = item.qty_teks || '0';
                         const statusValid = item.status_validasi || 'pending';
                         const primaryKey = item.id || item.timestamp;
-
-                        // Pastikan primaryKey aman dibungkus string jika berupa string/id teks
                         const primaryKeyStr = typeof primaryKey === 'string' ? `'${primaryKey}'` : primaryKey;
 
-                        let borderStyle = statusValid === 'valid' 
-                            ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20' 
-                            : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50';
+                        // Syarat Edit: Hanya terkunci jika status sudah 'valid' (centang hijau)
+                        const canEdit = statusValid !== 'valid';
+                        const clickAttr = canEdit ? `onclick="bukaModalEditSO(${primaryKeyStr})"` : '';
+                        const cursorStyle = canEdit ? 'cursor-pointer hover:text-sky-600 dark:hover:text-sky-400' : 'cursor-default opacity-90';
+                        const titleText = canEdit ? 'Klik baris untuk edit data' : 'Data sudah valid (terkunci)';
+
+                        // Penyesuaian warna border & background card berdasarkan status
+                        let borderStyle = 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50';
+                        if (statusValid === 'valid') {
+                            borderStyle = 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20';
+                        } else if (statusValid === 'invalid' || statusValid === 'diff') {
+                            borderStyle = 'border-rose-500 bg-rose-50/40 dark:bg-rose-950/20';
+                        }
 
                         html += `
                             <div class="p-3 rounded-xl border ${borderStyle} text-xs transition-all mb-2.5 shadow-xs">
-                                <!-- Baris Atas: Nomor, Lokasi & Tombol Centang (Valid) -->
+                                <!-- Baris Atas: Nomor, Lokasi & Tombol Aksi (Centang & Silang Berdampingan) -->
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center gap-1.5">
                                         <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded text-[10px] font-black">${nomorUrut}.</span>
                                         <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-extrabold text-[10px]">[${item.lokasi_rak || '-'}]</span>
+                        </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <!-- Tombol Centang Hijau (Valid) -->
+                                        <button onclick="ubahStatusValidasi(${primaryKeyStr}, 'valid')" 
+                                            class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'valid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600'}" 
+                                            title="Tandai Sama / Kunci Data">
+                                            <i class="fa-solid fa-check text-xs"></i>
+                                        </button>
+                                        <!-- Tombol Silang Merah (Invalid) -->
+                                        <button onclick="ubahStatusValidasi(${primaryKeyStr}, 'invalid')" 
+                                            class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'invalid' || statusValid === 'diff' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-rose-100 hover:text-rose-600'}" 
+                                            title="Tandai Berbeda">
+                                            <i class="fa-solid fa-xmark text-xs"></i>
+                                        </button>
                                     </div>
-                                    <button onclick="ubahStatusValidasi(${primaryKeyStr}, 'valid')" 
-                                        class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'valid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600'}" 
-                                        title="Tandai Sama / Kunci Data">
-                                        <i class="fa-solid fa-check text-xs"></i>
-                                    </button>
                                 </div>
 
-                                <!-- Baris Bawah: Kode Barang = Qty (Sejajar Lokasi) & Tombol Silang (Invalid) di Kanan -->
-                                <div class="flex items-center justify-between">
-                                    <div onclick="bukaModalEditSO(${primaryKeyStr})" class="flex items-center gap-2 pl-6 cursor-pointer flex-grow truncate font-mono font-black text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400" title="Klik baris untuk edit data">
+                                <!-- Baris Bawah: Kode Barang = Qty (Hanya bisa diklik jika belum valid) -->
+                                <div class="flex items-center justify-start">
+                                    <div ${clickAttr} class="flex items-center gap-2 pl-6 ${cursorStyle} flex-grow truncate font-mono font-black text-slate-800 dark:text-slate-200" title="${titleText}">
                                         <span class="uppercase tracking-wide text-xs">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400 text-xs">${formatSatuan}</span></span>
                                     </div>
-                                    <button onclick="ubahStatusValidasi(${primaryKeyStr}, 'invalid')" 
-                                        class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ml-2 ${statusValid === 'invalid' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-rose-100 hover:text-rose-600'}" 
-                                        title="Tandai Berbeda">
-                                        <i class="fa-solid fa-xmark text-xs"></i>
-                                    </button>
                                 </div>
                             </div>
                         `;
@@ -3346,40 +3410,55 @@
         }
 
 
-        // --- FUNGSI UTAMA MEMUAT LAPORAN GABUNGAN DENGAN ARSIP TANGGAL ---
+        // --- FUNGSI UTAMA MEMUAT LAPORAN GABUNGAN DENGAN MULTI-FALLBACK MASTER DATA RTDB ---
         function muatLaporanGabungan() {
-            if (!db) return;
+            if (typeof firebase === 'undefined' || !firebase.database) {
+                console.error("Firebase tidak tersedia!");
+                return;
+            }
 
             const gudangAktif = localStorage.getItem('stomo_gudang') || '';
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
+            const isBlokGudang = gudangAktif.toUpperCase().includes('BLOK') || gudangAktif.toUpperCase() === 'WH-3 BLOK';
 
-            // 1. Ambil daftar tanggal arsip yang tersedia di Firebase RTDB untuk gudang ini
+            // 1. Ambil daftar tanggal arsip yang tersedia secara global di Firebase RTDB
             const refStokOpname = firebase.database().ref('stok_opname');
             refStokOpname.once('value').then(snapshot => {
                 const allFolders = snapshot.val() || {};
                 let daftarTanggalUnik = new Set();
 
-                // Format folder di RTDB: [GUDANG]_[YYYY_MM_DD] (Contoh: WH-1_2026_11_05)
                 Object.keys(allFolders).forEach(folderName => {
-                    if (folderName.startsWith(gudangClean + '_')) {
-                        let tglPart = folderName.replace(gudangClean + '_', '');
+                    if (folderName.startsWith(gudangClean + '_') || (isBlokGudang && folderName.includes('stok_blok'))) {
+                        let tglPart = folderName.replace(gudangClean + '_', '').replace('stok_blok_', '');
                         if (tglPart.match(/^\d{4}_\d{2}_\d{2}$/)) {
-                            daftarTanggalUnik.add(tglPart);
+                            const folderData = allFolders[folderName];
+                            if (folderData && (folderData.hasil_so || folderData.master_data)) {
+                                daftarTanggalUnik.add(tglPart);
+                            }
                         }
                     }
                 });
 
-                // Tambahkan tanggal hari ini sebagai fallback jika belum ada di RTDB
-                const now = new Date();
-                const YYYY = now.getFullYear();
-                const MM = String(now.getMonth() + 1).padStart(2, '0');
-                const DD = String(now.getDate()).padStart(2, '0');
-                const tanggalHariIni = `${YYYY}_${MM}_${DD}`;
-                daftarTanggalUnik.add(tanggalHariIni);
+                if (isBlokGudang && allFolders['stok_blok']) {
+                    const now = new Date();
+                    const fallbackTgl = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${String(now.getDate()).padStart(2, '0')}`;
+                    daftarTanggalUnik.add(fallbackTgl);
+                }
 
-                let sortedTanggal = [...daftarTanggalUnik].sort().reverse(); // Urutkan dari terbaru
-
+                let sortedTanggal = [...daftarTanggalUnik].sort().reverse();
                 const dropdownArsip = document.getElementById('filter-arsip-tanggal');
+                const containerLaporan = document.getElementById('container-tabel-laporan') || document.getElementById('list-laporan-gabungan');
+
+                if (sortedTanggal.length === 0) {
+                    if (dropdownArsip) {
+                        dropdownArsip.innerHTML = '<option value="">-- TIDAK ADA ARSIP SO GLOBAL --</option>';
+                    }
+                    if (containerLaporan) {
+                        containerLaporan.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-600 text-xs italic">Belum ada data hasil SO global di server RTDB untuk gudang [${gudangAktif}].</div>`;
+                    }
+                    return;
+                }
+
                 let selectedTanggal = dropdownArsip ? dropdownArsip.value : '';
 
                 if (dropdownArsip) {
@@ -3387,51 +3466,103 @@
                     sortedTanggal.forEach(tgl => {
                         let opt = document.createElement('option');
                         opt.value = tgl;
-                        opt.textContent = `Arsip: ${tgl.replace(/_/g, '-')}`;
-                        if (tgl === selectedTanggal || (!selectedTanggal && tgl === tanggalHariIni)) {
+                        let p = tgl.split('_');
+                        let formatDDMMYYYY = p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : tgl.replace(/_/g, '/');
+                        opt.textContent = `Arsip SO : ${formatDDMMYYYY}`;
+                        
+                        if (tgl === selectedTanggal || (!selectedTanggal && tgl === sortedTanggal[0])) {
                             opt.selected = true;
                         }
                         dropdownArsip.appendChild(opt);
                     });
-                    selectedTanggal = dropdownArsip.value || tanggalHariIni;
+                    selectedTanggal = dropdownArsip.value || sortedTanggal[0];
                 }
 
                 const fullFolderId = `${gudangClean}_${selectedTanggal}`;
 
-                // 2. Tarik Data Master & Hasil SO Berdasarkan Folder Tanggal Terpilih dari Firebase RTDB & IndexedDB
-                const masterRef = firebase.database().ref(`stok_opname/${fullFolderId}/master_data`);
+                // 2. Tarik Hasil SO Global Berdasarkan Folder Tanggal Terpilih
                 const hasilSoRef = firebase.database().ref(`stok_opname/${fullFolderId}/hasil_so`);
 
-                Promise.all([
-                    masterRef.once('value'),
-                    hasilSoRef.once('value')
-                ]).then(([masterSnap, hasilSoSnap]) => {
-                    let masterDataObj = masterSnap.val();
+                hasilSoRef.once('value').then(hasilSoSnap => {
                     let dataHasilSoObj = hasilSoSnap.val() || {};
-
-                    // Konversi hasil SO dari objek Firebase ke array
                     let semuaSO = Object.values(dataHasilSoObj);
 
-                    // Fallback ke IndexedDB / LocalStorage jika master di Firebase belum ada
-                    if (!masterDataObj) {
-                        const tx = db.transaction(["master_stok"], "readonly");
-                        const storeMaster = tx.objectStore("master_stok");
-                        storeMaster.get(fullFolderId).onsuccess = function(e) {
-                            const res = e.target.result;
-                            if (res && res.data) masterDataObj = res.data;
-                            else {
-                                try {
-                                    const raw = localStorage.getItem(`stomo_master_${fullFolderId}`) || localStorage.getItem(`stomo_master_${gudangClean}`);
-                                    if (raw) masterDataObj = JSON.parse(raw);
-                                } catch(err) {}
+                    // 3. Multi-Fallback Pencarian Master Data (RTDB Spesifik -> RTDB Global Gudang -> LocalStorage -> IndexedDB)
+                    const masterRefSpesifik = firebase.database().ref(`stok_opname/${fullFolderId}/master_data`);
+                    const masterRefGlobal = firebase.database().ref(`stok_opname/${gudangClean}/master_data`);
+
+                    masterRefSpesifik.once('value').then(masterSnap => {
+                        let masterDataObj = masterSnap.val();
+
+                        if (masterDataObj && Object.keys(masterDataObj).length > 0) {
+                            return renderTabelLaporan(masterDataObj, semuaSO, gudangAktif, selectedTanggal);
+                        }
+
+                        // Coba ambil dari master global gudang di RTDB
+                        masterRefGlobal.once('value').then(globalSnap => {
+                            let globalMaster = globalSnap.val();
+                            if (globalMaster && Object.keys(globalMaster).length > 0) {
+                                return renderTabelLaporan(globalMaster, semuaSO, gudangAktif, selectedTanggal);
                             }
-                            renderTabelLaporan(masterDataObj, semuaSO, gudangAktif, selectedTanggal);
-                        };
-                    } else {
-                        renderTabelLaporan(masterDataObj, semuaSO, gudangAktif, selectedTanggal);
-                    }
+
+                            // Jika gudang blok, ambil dari root stok_blok
+                            if (isBlokGudang) {
+                                return firebase.database().ref('stok_blok').once('value').then(blokSnap => {
+                                    let blokRaw = blokSnap.val() || {};
+                                    let mappedBlokData = {};
+                                    Object.keys(blokRaw).forEach(namaBlok => {
+                                        const itemsBarang = blokRaw[namaBlok];
+                                        if (itemsBarang && typeof itemsBarang === 'object') {
+                                            Object.keys(itemsBarang).forEach(kodeBarang => {
+                                                let kunciUnik = `${namaBlok}_${kodeBarang}`.toUpperCase();
+                                                let expData = itemsBarang[kodeBarang];
+                                                let totalKrtMaster = 0;
+                                                if (expData && typeof expData === 'object') {
+                                                    Object.keys(expData).forEach(expKey => {
+                                                        let detailExp = expData[expKey];
+                                                        if (detailExp) totalKrtMaster += parseInt(detailExp.krt || detailExp.KRT || 0, 10);
+                                                    });
+                                                }
+                                                mappedBlokData[kunciUnik] = {
+                                                    KODE: kodeBarang,
+                                                    NAMA: `STOK ${namaBlok} - ${kodeBarang}`,
+                                                    K_AKHIR: `${totalKrtMaster}/0/0/0`,
+                                                    blok: namaBlok.trim().toUpperCase()
+                                                };
+                                            });
+                                        }
+                                    });
+                                    return renderTabelLaporan(mappedBlokData, semuaSO, gudangAktif, selectedTanggal);
+                                });
+                            }
+
+                            // Fallback ke LocalStorage / Cache Sesi Aktif
+                            try {
+                                const rawLocal = localStorage.getItem(`stomo_master_${fullFolderId}`) || localStorage.getItem(`stomo_master_${gudangClean}`);
+                                if (rawLocal) {
+                                    return renderTabelLaporan(JSON.parse(rawLocal), semuaSO, gudangAktif, selectedTanggal);
+                                }
+                            } catch(e) {}
+
+                            // Fallback terakhir ke IndexedDB
+                            if (db) {
+                                const tx = db.transaction(["master_stok"], "readonly");
+                                const storeMaster = tx.objectStore("master_stok");
+                                storeMaster.get(fullFolderId).onsuccess = function(e) {
+                                    const res = e.target.result;
+                                    let finalMaster = (res && res.data) ? res.data : {};
+                                    renderTabelLaporan(finalMaster, semuaSO, gudangAktif, selectedTanggal);
+                                };
+                            } else {
+                                renderTabelLaporan({}, semuaSO, gudangAktif, selectedTanggal);
+                            }
+                        });
+                    });
                 }).catch(err => {
-                    console.error("Gagal memuat arsip laporan:", err);
+                    console.error("Gagal memuat laporan:", err);
+                    if (containerLaporan) {
+                        containerLaporan.innerHTML = `<div class="text-center py-12 text-rose-500 text-xs">Gagal memuat data laporan dari server RTDB.</div>`;
+                    }
                 });
             });
         }
@@ -3440,6 +3571,10 @@
         function renderTabelLaporan(masterData, semuaSO, gudangAktif, tanggalArsip = "") {
             const container = document.getElementById('container-tabel-laporan');
             if (!container) return;
+
+            // Proteksi null/undefined untuk masterData dan semuaSO
+            if (!masterData) masterData = {};
+            if (!Array.isArray(semuaSO)) semuaSO = [];
 
             let masterArray = [];
             if (masterData) {
@@ -3502,12 +3637,10 @@
                             if (!tempPerRak[rakKey]) {
                                 tempPerRak[rakKey] = valKrt;
                             } else {
-                                // Ambil nilai terbesar/representatif per rak jika ada input dari 2 petugas berbeda (cross-check)
                                 tempPerRak[rakKey] = Math.max(tempPerRak[rakKey], valKrt);
                             }
                         });
 
-                        // Total kan seluruh rak untuk kode barang tersebut (BLOK 18CD + BLOK 18F + BLOK RETUR)
                         Object.keys(tempPerRak).forEach(rakKey => {
                             let kode = rakKey.split('_')[0];
                             if (!mapRekapBersih[kode]) mapRekapBersih[kode] = 0;
@@ -3547,7 +3680,6 @@
                     if (!tempEntriBlok[key]) {
                         tempEntriBlok[key] = 0;
                     }
-                    // Jika petugas yang sama menginput ganda di rak yang sama, jumlahkan
                     tempEntriBlok[key] += kKrt;
                 }
             }
@@ -3744,8 +3876,13 @@
 
             const elJudul = document.getElementById('judul-laporan-gudang');
             if (elJudul) {
-                const tglFormat = tanggalArsip ? tanggalArsip.replace(/_/g, '-') : 'TERBARU';
-                elJudul.innerHTML = `LAPORAN GABUNGAN : <span class="text-sky-600 dark:text-sky-400">${gudangAktif}</span> [Arsip SO: ${tglFormat}]`;
+                let formatTgl = 'TERBARU';
+                if (tanggalArsip) {
+                    let cleanTgl = tanggalArsip.replace(/-/g, '_');
+                    let p = cleanTgl.split('_');
+                    formatTgl = p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : tanggalArsip.replace(/_/g, '/');
+                }
+                elJudul.innerHTML = `LAPORAN GABUNGAN : <span class="text-sky-600 dark:text-sky-400">${gudangAktif}</span> [Arsip SO : ${formatTgl}]`;
             }
 
             if (listKode.length === 0) {
@@ -3804,7 +3941,7 @@
             });
 
             html += `
-                                    <th class="p-3 text-center bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 min-w-[110px]">Total Rekap Qty</th>
+                                    <th class="p-3 text-center bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 min-w-[110px]">Total QTY Rekap</th>
                                     <th class="p-3 text-center bg-purple-50/70 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 min-w-[100px]">Selisih</th>
                                     <th class="p-3 text-center min-w-[130px]">Keterangan</th>
                                 </tr>
