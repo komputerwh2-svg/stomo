@@ -3026,7 +3026,7 @@
             }
         }
 
-        // --- FUNGSI EXPORT LAPORAN REKAPITULASI DENGAN 2 SHEET (GABUNGAN & HASIL SO) ---
+        // --- FUNGSI EXPORT LAPORAN REKAPITULASI DENGAN 2 SHEET (TERAKUMULASI & BERSIH) ---
         function exportLaporanExcel() {
             const gudangAktif = localStorage.getItem('stomo_gudang') || 'GUDANG';
             const gudangUpper = gudangAktif.toUpperCase().trim();
@@ -3254,9 +3254,9 @@
                         let dataPtg = trackingEntriPetugas[entriKey];
 
                         if (!rekapData[kode][rak]) {
-                        rekapData[kode][rak] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
+                            rekapData[kode][rak] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
                         } else {
-                            // PERBAIKAN: Akumulasi nilai krt, ball, rtg, pcs untuk multi-input pada rak yang sama
+                            // AKUMULASI PENJUMLAHAN GANDA (+=) UNTUK GUDANG BLOK
                             rekapData[kode][rak].krt += dataPtg.krt;
                             rekapData[kode][rak].ball += dataPtg.ball;
                             rekapData[kode][rak].rtg += dataPtg.rtg;
@@ -3283,13 +3283,22 @@
                         let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
                         let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
 
-                        rekapData[kode][kolomKey] = { 
-                            petugasSet: new Set([ptg]), 
-                            krt: valKrt, 
-                            ball: valBall, 
-                            rtg: valRtg, 
-                            pcs: valPcs 
-                        };
+                        if (!rekapData[kode][kolomKey]) {
+                            rekapData[kode][kolomKey] = { 
+                                petugasSet: new Set([ptg]), 
+                                krt: valKrt, 
+                                ball: valBall, 
+                                rtg: valRtg, 
+                                pcs: valPcs 
+                            };
+                        } else {
+                            kolomUnikMap[kolomKey].petugasSet.add(ptg);
+                            // AKUMULASI PENJUMLAHAN GANDA (+=) UNTUK GUDANG REGULER/INDUK
+                            rekapData[kode][kolomKey].krt += valKrt;
+                            rekapData[kode][kolomKey].ball += valBall;
+                            rekapData[kode][kolomKey].rtg += valRtg;
+                            rekapData[kode][kolomKey].pcs += valPcs;
+                        }
                     });
                 }
 
@@ -3361,7 +3370,8 @@
                 // --- PIPELINE PISAH DATA BARIS PER BARIS ---
                 listKode.forEach((kode, idx) => {
                     const masterItem = masterMap[kode] || {};
-                    const namaBarang = isGudangBlok ? '-' : (masterItem.NAMA || masterItem.Nama || masterItem.BARANG || masterItem.nama || '-');
+                    // KONDISI KHUSUS: Jika gudang blok, nama barang dikosongkan/diisi '-'
+                    const namaBarang = isWh3BlokOnly ? '-' : (masterItem.NAMA || masterItem.Nama || masterItem.BARANG || masterItem.nama || '-');
                     const kAkhir = masterItem.K_AKHIR || masterItem.k_akhir || '0/0/0/0';
 
                     let masterObj = parseBosnetQty(kAkhir);
