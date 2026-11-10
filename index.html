@@ -3029,31 +3029,106 @@
         // --- FUNGSI EXPORT LAPORAN REKAPITULASI DENGAN 2 SHEET (GABUNGAN & HASIL SO) ---
         function exportLaporanExcel() {
             const gudangAktif = localStorage.getItem('stomo_gudang') || 'GUDANG';
+            const gudangUpper = gudangAktif.toUpperCase().trim();
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
-
-            if (!db) return customAlert("Database IndexedDB belum siap!");
+            const isWh3BlokOnly = gudangUpper === 'WH-3 BLOK' || gudangUpper === 'WH-3_BLOK';
 
             // Ambil dropdown arsip tanggal yang sedang dipilih pada halaman laporan
             const dropdownArsip = document.getElementById('filter-arsip-tanggal');
             const selectedTanggal = dropdownArsip ? dropdownArsip.value : '';
 
-            let folderId = selectedTanggal ? `${gudangClean}_${selectedTanggal}` : null;
-
             if (typeof firebase === 'undefined' || !firebase.database) {
-                return customAlert("Koneksi Firebase tidak tersedia untuk mengambil data arsip laporan!");
+                if (typeof customAlert === 'function') customAlert("Koneksi Firebase tidak tersedia!");
+                else alert("Koneksi Firebase tidak tersedia!");
+                return;
             }
 
-            let targetRef = folderId ? firebase.database().ref(`stok_opname/${folderId}`) : null;
+            // Tentukan mapping prefix RTDB khusus untuk Hasil SO dan Master Data berdasarkan gudang aktif
+            let hasilSoPrefix = gudangClean;
+            let masterPrefix = gudangClean;
 
-            const prosesExportData = (masterDataObj, semuaSO) => {
+            if (gudangUpper === 'WH-1') {
+                hasilSoPrefix = 'WH-1';
+                masterPrefix = 'WHNB-1';
+            } else if (gudangUpper === 'WH-1 BLOK-1' || gudangUpper === 'WH-1_BLOK-1') {
+                hasilSoPrefix = 'WH-1_BLOK-1';
+                masterPrefix = 'WH1-BLOK1';
+            } else if (gudangUpper === 'WH-3') {
+                hasilSoPrefix = 'WH-3';
+                masterPrefix = 'WHNB-2';
+            } else if (isWh3BlokOnly) {
+                hasilSoPrefix = 'WH-3_BLOK';
+                masterPrefix = 'stok_blok';
+            }
+
+            const hasilSoFolderId = `${hasilSoPrefix}_${selectedTanggal}`;
+            const masterFolderId = `${masterPrefix}_${selectedTanggal}`;
+
+            // Tentukan reference Firebase
+            const hasilSoRef = firebase.database().ref(`stok_opname/${hasilSoFolderId}/hasil_so`);
+            const masterSpesifikRef = firebase.database().ref(`stok_opname/${masterFolderId}/master_data`);
+            const masterGlobalRef = firebase.database().ref(`stok_opname/${masterPrefix}/master_data`);
+            const stokBlokRef = firebase.database().ref('stok_blok');
+
+            // Eksekusi penarikan data secara paralel dari RTDB
+            Promise.all([
+                hasilSoRef.once('value'),
+                masterSpesifikRef.once('value'),
+                masterGlobalRef.once('value'),
+                isWh3BlokOnly ? stokBlokRef.once('value') : Promise.resolve(null)
+            ]).then(([hasilSoSnap, masterSpesifikSnap, masterGlobalSnap, stokBlokSnap]) => {
+                let dataHasilSoObj = hasilSoSnap.val() || {};
+                let semuaSO = Object.values(dataHasilSoObj);
+
+                let masterDataObj = masterSpesifikSnap.val() || masterGlobalSnap.val() || {};
+
+                // Jika gudang WH-3 Blok dan master kosong, petakan dari root stok_blok RTDB
+                if (isWh3BlokOnly && Object.keys(masterDataObj).length === 0 && stokBlokSnap) {
+                    let blokRaw = stokBlokSnap.val() || {};
+                    let mappedBlokData = {};
+                    Object.keys(blokRaw).forEach(namaBlok => {
+                        const itemsBarang = blokRaw[namaBlok];
+                        if (itemsBarang && typeof itemsBarang === 'object') {
+                            Object.keys(itemsBarang).forEach(kodeBarang => {
+                                let kunciUnik = `${namaBlok}_${kodeBarang}`.toUpperCase();
+                                let expData = itemsBarang[kodeBarang];
+                                let totalKrtMaster = 0;
+                                if (expData && typeof expData === 'object') {
+                                    Object.keys(expData).forEach(expKey => {
+                                        let detailExp = expData[expKey];
+                                        if (detailExp) totalKrtMaster += parseInt(detailExp.krt || detailExp.KRT || 0, 10);
+                                    });
+                                }
+                                mappedBlokData[kunciUnik] = {
+                                    KODE: kodeBarang,
+                                    NAMA: `STOK ${namaBlok} - ${kodeBarang}`,
+                                    K_AKHIR: `${totalKrtMaster}/0/0/0`,
+                                    blok: namaBlok.trim().toUpperCase()
+                                };
+                            });
+                        }
+                    });
+                    masterDataObj = mappedBlokData;
+                }
+
+                // Jalankan pembuatan file Excel
+                prosesExportData(masterDataObj, semuaSO);
+
+            }).catch(err => {
+                console.error("Gagal ambil data arsip dari RTDB untuk export:", err);
+                if (typeof customAlert === 'function') customAlert("Gagal mengambil data dari server RTDB untuk export Excel.");
+                else alert("Gagal mengambil data dari server RTDB untuk export Excel.");
+            });
+
+            // --- FUNGSI INTERNAL PENGOLAHAN DAN GENERATE EXCEL ---
+            function prosesExportData(masterDataObj, semuaSO) {
                 let masterArray = [];
                 if (masterDataObj) {
                     masterArray = Array.isArray(masterDataObj) ? masterDataObj : Object.values(masterDataObj);
                 }
 
-                const gudangUpper = gudangAktif.toUpperCase().trim();
                 const isGudangWH3Induk = gudangUpper === 'WH-3' || (gudangUpper.includes('WH-3') && !gudangUpper.includes('BLOK'));
-                const isGudangBlok = gudangUpper.includes('BLOK');
+                const isGudangBlok = isWh3BlokOnly;
 
                 // --- 1. AKUMULASI GLOBAL MASTER STOK BLOK JIKA DI GUDANG BLOK ---
                 let globalMasterStokBlokMap = {};
@@ -3101,7 +3176,10 @@
                 }
 
                 let listKode = [...semuaKodeBarang].sort();
-                if (listKode.length === 0) return customAlert("Tidak ada data laporan untuk di-export!");
+                if (listKode.length === 0) {
+                    if (typeof customAlert === 'function') return customAlert("Tidak ada data laporan untuk di-export!");
+                    else return alert("Tidak ada data laporan untuk di-export!");
+                }
 
                 let masterMap = {};
                 masterArray.forEach(m => {
@@ -3377,44 +3455,11 @@
                 if (typeof customAlert === 'function') {
                     customAlert(`Berhasil mengunduh Laporan Excel (2 Sheet):\n${namaFile}`);
                 }
-            };
-
-            if (targetRef) {
-                targetRef.once('value').then(snap => {
-                    const folderData = snap.val() || {};
-                    let masterDataObj = folderData.master_data || null;
-                    let semuaSO = folderData.hasil_so ? Object.values(folderData.hasil_so) : [];
-                    prosesExportData(masterDataObj, semuaSO);
-                }).catch(err => {
-                    console.error("Gagal ambil data arsip untuk export:", err);
-                    customAlert("Gagal mengambil data arsip dari server untuk export Excel.");
-                });
-            } else {
-                const tx = db.transaction(["master_stok", "hasil_so"], "readonly");
-                const storeMaster = tx.objectStore("master_stok");
-                const storeSO = tx.objectStore("hasil_so");
-
-                let masterDataObj = null;
-                let semuaSO = [];
-
-                storeMaster.get(gudangClean).onsuccess = function(e) {
-                    const res = e.target.result;
-                    if (res && res.data) masterDataObj = res.data;
-                };
-
-                storeSO.getAll().onsuccess = function(e) {
-                    const data = e.target.result || [];
-                    semuaSO = data.filter(item => String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase());
-                };
-
-                tx.oncomplete = function() {
-                    prosesExportData(masterDataObj, semuaSO);
-                };
             }
         }
 
 
-        // --- FUNGSI UTAMA MEMUAT LAPORAN GABUNGAN DENGAN MULTI-FALLBACK MASTER DATA RTDB ---
+        // --- FUNGSI UTAMA MEMUAT LAPORAN GABUNGAN DENGAN MAPPING PREFIX RTDB OTOMATIS ---
         function muatLaporanGabungan() {
             if (typeof firebase === 'undefined' || !firebase.database) {
                 console.error("Firebase tidak tersedia!");
@@ -3422,30 +3467,44 @@
             }
 
             const gudangAktif = localStorage.getItem('stomo_gudang') || '';
+            const gudangUpper = gudangAktif.toUpperCase().trim();
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
-            
-            // Perbaikan: isBlokGudang HANYA aktif untuk WH-3 BLOK agar WH-1 BLOK-1 tidak lari ke stok_blok
-            const isBlokGudang = gudangAktif.toUpperCase() === 'WH-3 BLOK' || gudangAktif.toUpperCase() === 'WH-3_BLOK';
+            const isWh3BlokOnly = gudangUpper === 'WH-3 BLOK' || gudangUpper === 'WH-3_BLOK';
 
-            // 1. Ambil daftar tanggal arsip yang tersedia secara global di Firebase RTDB
+            // Tentukan mapping prefix RTDB khusus untuk Hasil SO dan Master Data berdasarkan gudang aktif
+            let hasilSoPrefix = gudangClean;
+            let masterPrefix = gudangClean;
+
+            if (gudangUpper === 'WH-1') {
+                hasilSoPrefix = 'WH-1';
+                masterPrefix = 'WHNB-1';
+            } else if (gudangUpper === 'WH-1 BLOK-1' || gudangUpper === 'WH-1_BLOK-1') {
+                hasilSoPrefix = 'WH-1_BLOK-1';
+                masterPrefix = 'WH1-BLOK1';
+            } else if (gudangUpper === 'WH-3') {
+                hasilSoPrefix = 'WH-3';
+                masterPrefix = 'WHNB-2';
+            } else if (isWh3BlokOnly) {
+                hasilSoPrefix = 'WH-3_BLOK';
+                masterPrefix = 'stok_blok';
+            }
+
+            // 1. Ambil daftar tanggal arsip global dari Firebase RTDB
             const refStokOpname = firebase.database().ref('stok_opname');
             refStokOpname.once('value').then(snapshot => {
                 const allFolders = snapshot.val() || {};
                 let daftarTanggalUnik = new Set();
 
                 Object.keys(allFolders).forEach(folderName => {
-                    if (folderName.startsWith(gudangClean + '_') || (isBlokGudang && folderName.includes('stok_blok'))) {
-                        let tglPart = folderName.replace(gudangClean + '_', '').replace('stok_blok_', '');
+                    if (folderName.startsWith(hasilSoPrefix + '_') || (isWh3BlokOnly && folderName.includes('stok_blok'))) {
+                        let tglPart = folderName.replace(hasilSoPrefix + '_', '').replace('stok_blok_', '');
                         if (tglPart.match(/^\d{4}_\d{2}_\d{2}$/)) {
-                            const folderData = allFolders[folderName];
-                            if (folderData && (folderData.hasil_so || folderData.master_data)) {
-                                daftarTanggalUnik.add(tglPart);
-                            }
+                            daftarTanggalUnik.add(tglPart);
                         }
                     }
                 });
 
-                if (isBlokGudang && allFolders['stok_blok']) {
+                if (isWh3BlokOnly && allFolders['stok_blok']) {
                     const now = new Date();
                     const fallbackTgl = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${String(now.getDate()).padStart(2, '0')}`;
                     daftarTanggalUnik.add(fallbackTgl);
@@ -3460,7 +3519,7 @@
                         dropdownArsip.innerHTML = '<option value="">-- TIDAK ADA ARSIP SO GLOBAL --</option>';
                     }
                     if (containerLaporan) {
-                        containerLaporan.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-600 text-xs italic">Belum ada data hasil SO global di server RTDB untuk gudang [${gudangAktif}].</div>`;
+                        containerLaporan.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs italic">Belum ada data arsip SO global di server RTDB untuk gudang [${gudangAktif}].</div>`;
                     }
                     return;
                 }
@@ -3484,90 +3543,61 @@
                     selectedTanggal = dropdownArsip.value || sortedTanggal[0];
                 }
 
-                const fullFolderId = `${gudangClean}_${selectedTanggal}`;
+                const hasilSoFolderId = `${hasilSoPrefix}_${selectedTanggal}`;
+                const masterFolderId = `${masterPrefix}_${selectedTanggal}`;
 
-                // 2. Tarik Hasil SO Global Berdasarkan Folder Tanggal Terpilih
-                const hasilSoRef = firebase.database().ref(`stok_opname/${fullFolderId}/hasil_so`);
+                // 2. Tarik Hasil SO dan Master Data Secara Paralel Menggunakan Prefix yang Tepat
+                const hasilSoRef = firebase.database().ref(`stok_opname/${hasilSoFolderId}/hasil_so`);
+                const masterSpesifikRef = firebase.database().ref(`stok_opname/${masterFolderId}/master_data`);
+                const masterGlobalRef = firebase.database().ref(`stok_opname/${masterPrefix}/master_data`);
+                const stokBlokRef = firebase.database().ref('stok_blok');
 
-                hasilSoRef.once('value').then(hasilSoSnap => {
+                Promise.all([
+                    hasilSoRef.once('value'),
+                    masterSpesifikRef.once('value'),
+                    masterGlobalRef.once('value'),
+                    isWh3BlokOnly ? stokBlokRef.once('value') : Promise.resolve(null)
+                ]).then(([hasilSoSnap, masterSpesifikSnap, masterGlobalSnap, stokBlokSnap]) => {
                     let dataHasilSoObj = hasilSoSnap.val() || {};
                     let semuaSO = Object.values(dataHasilSoObj);
 
-                    // 3. Multi-Fallback Pencarian Master Data (RTDB Spesifik -> RTDB Global Gudang -> LocalStorage -> IndexedDB)
-                    const masterRefSpesifik = firebase.database().ref(`stok_opname/${fullFolderId}/master_data`);
-                    const masterRefGlobal = firebase.database().ref(`stok_opname/${gudangClean}/master_data`);
+                    let masterDataObj = masterSpesifikSnap.val() || masterGlobalSnap.val() || {};
 
-                    masterRefSpesifik.once('value').then(masterSnap => {
-                        let masterDataObj = masterSnap.val();
-
-                        if (masterDataObj && Object.keys(masterDataObj).length > 0) {
-                            return renderTabelLaporan(masterDataObj, semuaSO, gudangAktif, selectedTanggal);
-                        }
-
-                        // Coba ambil dari master global gudang di RTDB
-                        masterRefGlobal.once('value').then(globalSnap => {
-                            let globalMaster = globalSnap.val();
-                            if (globalMaster && Object.keys(globalMaster).length > 0) {
-                                return renderTabelLaporan(globalMaster, semuaSO, gudangAktif, selectedTanggal);
-                            }
-
-                            // Jika gudang blok (WH-3 BLOK), ambil dari root stok_blok
-                            if (isBlokGudang) {
-                                return firebase.database().ref('stok_blok').once('value').then(blokSnap => {
-                                    let blokRaw = blokSnap.val() || {};
-                                    let mappedBlokData = {};
-                                    Object.keys(blokRaw).forEach(namaBlok => {
-                                        const itemsBarang = blokRaw[namaBlok];
-                                        if (itemsBarang && typeof itemsBarang === 'object') {
-                                            Object.keys(itemsBarang).forEach(kodeBarang => {
-                                                let kunciUnik = `${namaBlok}_${kodeBarang}`.toUpperCase();
-                                                let expData = itemsBarang[kodeBarang];
-                                                let totalKrtMaster = 0;
-                                                if (expData && typeof expData === 'object') {
-                                                    Object.keys(expData).forEach(expKey => {
-                                                        let detailExp = expData[expKey];
-                                                        if (detailExp) totalKrtMaster += parseInt(detailExp.krt || detailExp.KRT || 0, 10);
-                                                    });
-                                                }
-                                                mappedBlokData[kunciUnik] = {
-                                                    KODE: kodeBarang,
-                                                    NAMA: `STOK ${namaBlok} - ${kodeBarang}`,
-                                                    K_AKHIR: `${totalKrtMaster}/0/0/0`,
-                                                    blok: namaBlok.trim().toUpperCase()
-                                                };
-                                            });
-                                        }
-                                    });
-                                    return renderTabelLaporan(mappedBlokData, semuaSO, gudangAktif, selectedTanggal);
+                    // Jika WH-3 Blok dan master kosong, petakan langsung dari root stok_blok RTDB
+                    if (isWh3BlokOnly && Object.keys(masterDataObj).length === 0 && stokBlokSnap) {
+                        let blokRaw = stokBlokSnap.val() || {};
+                        let mappedBlokData = {};
+                        Object.keys(blokRaw).forEach(namaBlok => {
+                            const itemsBarang = blokRaw[namaBlok];
+                            if (itemsBarang && typeof itemsBarang === 'object') {
+                                Object.keys(itemsBarang).forEach(kodeBarang => {
+                                    let kunciUnik = `${namaBlok}_${kodeBarang}`.toUpperCase();
+                                    let expData = itemsBarang[kodeBarang];
+                                    let totalKrtMaster = 0;
+                                    if (expData && typeof expData === 'object') {
+                                        Object.keys(expData).forEach(expKey => {
+                                            let detailExp = expData[expKey];
+                                            if (detailExp) totalKrtMaster += parseInt(detailExp.krt || detailExp.KRT || 0, 10);
+                                        });
+                                    }
+                                    mappedBlokData[kunciUnik] = {
+                                        KODE: kodeBarang,
+                                        NAMA: `STOK ${namaBlok} - ${kodeBarang}`,
+                                        K_AKHIR: `${totalKrtMaster}/0/0/0`,
+                                        blok: namaBlok.trim().toUpperCase()
+                                    };
                                 });
                             }
-
-                            // Fallback ke LocalStorage / Cache Sesi Aktif
-                            try {
-                                const rawLocal = localStorage.getItem(`stomo_master_${fullFolderId}`) || localStorage.getItem(`stomo_master_${gudangClean}`);
-                                if (rawLocal) {
-                                    return renderTabelLaporan(JSON.parse(rawLocal), semuaSO, gudangAktif, selectedTanggal);
-                                }
-                            } catch(e) {}
-
-                            // Fallback terakhir ke IndexedDB
-                            if (db) {
-                                const tx = db.transaction(["master_stok"], "readonly");
-                                const storeMaster = tx.objectStore("master_stok");
-                                storeMaster.get(fullFolderId).onsuccess = function(e) {
-                                    const res = e.target.result;
-                                    let finalMaster = (res && res.data) ? res.data : {};
-                                    renderTabelLaporan(finalMaster, semuaSO, gudangAktif, selectedTanggal);
-                                };
-                            } else {
-                                renderTabelLaporan({}, semuaSO, gudangAktif, selectedTanggal);
-                            }
                         });
-                    });
+                        masterDataObj = mappedBlokData;
+                    }
+
+                    // 3. Render Tabel Laporan Instan Tanpa Perlu Download Master Manual
+                    renderTabelLaporan(masterDataObj, semuaSO, gudangAktif, selectedTanggal);
                 }).catch(err => {
-                    console.error("Gagal memuat laporan:", err);
+                    console.error("Gagal menarik data laporan dari RTDB:", err);
                     if (containerLaporan) {
-                        containerLaporan.innerHTML = `<div class="text-center py-12 text-rose-500 text-xs">Gagal memuat data laporan dari server RTDB.</div>`;
+                        containerLaporan.innerHTML = `<div class="text-center py-12 text-rose-500 text-xs">Gagal memuat laporan dari server RTDB.</div>`;
                     }
                 });
             });
@@ -3975,7 +4005,7 @@
                         <td class="p-3 text-center font-bold text-slate-400 text-[11px] align-middle">${no}</td>
                         <td class="p-3 align-middle">
                             <div class="font-black text-slate-800 dark:text-slate-200 uppercase">${kode}</div>
-                            <div class="text-[10px] text-slate-400 truncate max-w-xs uppercase">${namaBarang}</div>
+                            ${!isGudangBlok ? `<div class="text-[10px] text-slate-400 truncate max-w-xs uppercase">${namaBarang}</div>` : ''}
                         </td>
                 `;
 
