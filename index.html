@@ -2562,7 +2562,7 @@
             };
         }
 
-        // --- FUNGSI RENDER 5 RIWAYAT INPUT TERAKHIR (FORMAT BOSNET) ---
+        // --- FUNGSI RENDER 5 RIWAYAT INPUT TERAKHIR (FORMAT 2 BARIS SEJAJAR) ---
         function muatRiwayatInputTerbaru() {
             if (!db) return;
 
@@ -2615,18 +2615,24 @@
                             blurClass = 'blur-[0.8px]';
                         }
 
-                        // Gunakan format standar Bosnet yang tersimpan di qty_teks (misal: 10/0/0/0)
+                        // Gunakan format standar Bosnet yang tersimpan di qty_teks (misal: 95/0/0/0)
                         let formatSatuan = item.qty_teks || `${item.qty_krt || 0}/${item.qty_ball || 0}/${item.qty_rtg || 0}/${item.qty_pcs || 0}`;
                         let lokasiRak = item.lokasi_rak ? item.lokasi_rak.toUpperCase() : '-';
 
                         html += `
-                            <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800 text-xs font-bold transition-all ${opacityClass} ${blurClass}">
-                                <div class="flex items-center gap-2 truncate">
-                                    <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded text-[10px] font-black">${item.nomorUrutAsli}.</span>
-                                    <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-black">[${lokasiRak}]</span>
-                                    <span class="text-slate-800 dark:text-slate-200 truncate uppercase">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400 font-mono">${formatSatuan}</span></span>
+                            <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs transition-all ${opacityClass} ${blurClass} mb-2">
+                                <!-- Baris Atas: Nomor, Lokasi & Waktu -->
+                                <div class="flex items-center justify-between mb-1.5 text-[11px]">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded text-[10px] font-black">${item.nomorUrutAsli}.</span>
+                                        <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-extrabold text-[10px]">[${lokasiRak}]</span>
+                                    </div>
+                                    <span class="font-semibold text-slate-400 tracking-wider font-mono text-[10px]">[${waktu}]</span>
                                 </div>
-                                <span class="text-[10px] font-semibold text-slate-400 tracking-wider">[${waktu}]</span>
+                                <!-- Baris Bawah: Kode Barang & Qty Tersambung Rata Kiri Sejajar Lokasi -->
+                                <div class="flex items-center justify-start pl-6 font-mono font-black text-slate-800 dark:text-slate-200">
+                                    <span class="uppercase tracking-wide text-[10px]">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400 text-[10px]">${formatSatuan}</span></span>
+                                </div>
                             </div>
                         `;
                     });
@@ -2638,7 +2644,7 @@
             }
         }
 
-        // --- FUNGSI RENDER & KELOLA HALAMAN LIHAT (CROSS-CHECK PER RAK) ---
+        // --- FUNGSI RENDER & KELOLA HALAMAN LIHAT (FORMAT 2 BARIS & MODAL EDIT AMAN) ---
         function muatDaftarHasilCek() {
             if (!db) return;
 
@@ -2704,29 +2710,35 @@
                         const statusValid = item.status_validasi || 'pending';
                         const primaryKey = item.id || item.timestamp;
 
+                        // Pastikan primaryKey aman dibungkus string jika berupa string/id teks
+                        const primaryKeyStr = typeof primaryKey === 'string' ? `'${primaryKey}'` : primaryKey;
+
                         let borderStyle = statusValid === 'valid' 
                             ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20' 
                             : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50';
 
                         html += `
-                            <div class="flex items-center justify-between px-3 py-2.5 rounded-xl border ${borderStyle} text-xs font-bold transition-all">
-                                <!-- Klik pada area teks baris untuk membuka modal edit -->
-                                <div onclick="bukaModalEditSO(${primaryKey})" class="flex items-center gap-2.5 truncate flex-grow cursor-pointer" title="Klik baris untuk edit data">
-                                    <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-2 py-0.5 rounded text-[10px] font-black">${nomorUrut}.</span>
-                                    <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-black">[${item.lokasi_rak || '-'}]</span>
-                                    <span class="text-slate-800 dark:text-slate-200 truncate uppercase">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400">${formatSatuan}</span></span>
-                                </div>
-                                <div class="flex items-center gap-1.5 ml-2">
-                                    <!-- Tombol Centang Hijau (Valid) -->
-                                    <button onclick="ubahStatusValidasi(${primaryKey}, 'valid')" 
+                            <div class="p-3 rounded-xl border ${borderStyle} text-xs transition-all mb-2.5 shadow-xs">
+                                <!-- Baris Atas: Nomor, Lokasi & Tombol Centang (Valid) -->
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded text-[10px] font-black">${nomorUrut}.</span>
+                                        <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-extrabold text-[10px]">[${item.lokasi_rak || '-'}]</span>
+                                    </div>
+                                    <button onclick="ubahStatusValidasi(${primaryKeyStr}, 'valid')" 
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'valid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600'}" 
                                         title="Tandai Sama / Kunci Data">
                                         <i class="fa-solid fa-check text-xs"></i>
                                     </button>
-                                    
-                                    <!-- Tombol Silang Merah (Hanya sebagai tanda berbeda, tidak membuka modal) -->
-                                    <button onclick="ubahStatusValidasi(${primaryKey}, 'invalid')" 
-                                        class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ${statusValid === 'invalid' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-rose-100 hover:text-rose-600'}" 
+                                </div>
+
+                                <!-- Baris Bawah: Kode Barang = Qty (Sejajar Lokasi) & Tombol Silang (Invalid) di Kanan -->
+                                <div class="flex items-center justify-between">
+                                    <div onclick="bukaModalEditSO(${primaryKeyStr})" class="flex items-center gap-2 pl-6 cursor-pointer flex-grow truncate font-mono font-black text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400" title="Klik baris untuk edit data">
+                                        <span class="uppercase tracking-wide text-xs">${item.kode_barang} = <span class="text-emerald-600 dark:text-emerald-400 text-xs">${formatSatuan}</span></span>
+                                    </div>
+                                    <button onclick="ubahStatusValidasi(${primaryKeyStr}, 'invalid')" 
+                                        class="w-7 h-7 rounded-lg flex items-center justify-center transition-all ml-2 ${statusValid === 'invalid' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-rose-100 hover:text-rose-600'}" 
                                         title="Tandai Berbeda">
                                         <i class="fa-solid fa-xmark text-xs"></i>
                                     </button>
@@ -2766,7 +2778,7 @@
             };
         }
 
-        // --- 2. FUNGSI MEMBUKA MODAL EDIT DATA SO ---
+        // --- 2. FUNGSI MEMBUKA MODAL EDIT DATA SO (BERLAKU UNTUK SEMUA GUDANG) ---
         function bukaModalEditSO(primaryKey) {
             if (!db) return;
 
@@ -2776,7 +2788,7 @@
 
             request.onsuccess = function(e) {
                 const semuaData = e.target.result || [];
-                const item = semuaData.find(d => (d.id === primaryKey || d.timestamp === primaryKey));
+                const item = semuaData.find(d => (d.id === primaryKey || d.timestamp === primaryKey || String(d.id) === String(primaryKey) || String(d.timestamp) === String(primaryKey)));
 
                 if (!item) return;
 
@@ -2784,24 +2796,37 @@
                 document.getElementById('edit-lokasi-rak').value = item.lokasi_rak || '-';
                 document.getElementById('edit-kode-barang').value = item.kode_barang || '';
 
-                const gudang = (item.gudang || '').toUpperCase();
-
-                // Atur Tampilan Kolom Qty (Multi Kolom vs Tunggal)
+                // Atur Tampilan Kolom Qty (Multi Kolom vs Tunggal secara universal)
                 const cSingle = document.getElementById('edit-container-qty-single');
                 const cMulti = document.getElementById('edit-container-qty-multi');
 
-                if (gudang === 'WH-1' || gudang === 'WH-3') {
+                // Cek apakah data memiliki komponen format box/teks garis miring (seperti KRT/BALL/RTG/PCS)
+                const isMultiFormat = item.qty_teks && item.qty_teks.includes('/');
+
+                if (isMultiFormat || item.qty_krt !== undefined || item.qty_ball !== undefined) {
                     if (cSingle) cSingle.classList.add('hidden');
                     if (cMulti) cMulti.classList.remove('hidden');
 
-                    document.getElementById('edit-qty-krt').value = item.qty_krt || 0;
-                    document.getElementById('edit-qty-ball').value = item.qty_ball || 0;
-                    document.getElementById('edit-qty-rtg').value = item.qty_rtg || 0;
+                    let qKrt = item.qty_krt !== undefined ? item.qty_krt : 0;
+                    let qBall = item.qty_ball !== undefined ? item.qty_ball : 0;
+                    let qRtg = item.qty_rtg !== undefined ? item.qty_rtg : 0;
+
+                    // Jika properti angka kosong tapi ada qty_teks, parse otomatis
+                    if ((qKrt === 0 && qBall === 0 && qRtg === 0) && item.qty_teks) {
+                        let parts = item.qty_teks.split('/');
+                        qKrt = parseInt(parts[0], 10) || 0;
+                        qBall = parseInt(parts[1], 10) || 0;
+                        qRtg = parseInt(parts[2], 10) || 0;
+                    }
+
+                    document.getElementById('edit-qty-krt').value = qKrt;
+                    document.getElementById('edit-qty-ball').value = qBall;
+                    document.getElementById('edit-qty-rtg').value = qRtg;
                 } else {
                     if (cSingle) cSingle.classList.remove('hidden');
                     if (cMulti) cMulti.classList.add('hidden');
 
-                    document.getElementById('edit-qty-single').value = item.qty_single || 0;
+                    document.getElementById('edit-qty-single').value = item.qty_single || item.qty_krt || 0;
                 }
 
                 document.getElementById('modalEditSO').classList.remove('hidden');
@@ -2812,11 +2837,12 @@
             document.getElementById('modalEditSO').classList.add('hidden');
         }
 
-        // --- 3. PROSES SIMPAN PERBAIKAN & OTOMATIS TANDAI CENTANG HIJAU ---
+        // --- 3. PROSES SIMPAN PERBAIKAN UNTUK SEMUA GUDANG ---
         function simpanPerbaikanSO() {
             if (!db) return;
 
-            const itemId = parseInt(document.getElementById('edit-item-id').value, 10);
+            const rawId = document.getElementById('edit-item-id').value;
+            const itemId = isNaN(rawId) ? rawId : parseInt(rawId, 10);
             const rakBaru = document.getElementById('edit-lokasi-rak').value.trim().toUpperCase() || '-';
 
             const tx = db.transaction(["hasil_so"], "readwrite");
@@ -2825,32 +2851,33 @@
 
             request.onsuccess = function(e) {
                 const semuaData = e.target.result || [];
-                const item = semuaData.find(d => (d.id === itemId || d.timestamp === itemId));
+                const item = semuaData.find(d => (d.id === itemId || d.timestamp === itemId || String(d.id) === String(rawId) || String(d.timestamp) === String(rawId)));
 
                 if (!item) return;
 
-                const gudang = (item.gudang || '').toUpperCase();
+                const cMulti = document.getElementById('edit-container-qty-multi');
                 let qtyValText = "";
 
-                if (gudang === 'WH-1' || gudang === 'WH-3') {
+                // Cek apakah form multi-kolom sedang aktif ditampilkan
+                if (cMulti && !cMulti.classList.contains('hidden')) {
                     const qtyKrt = parseInt(document.getElementById('edit-qty-krt').value, 10) || 0;
                     const qtyBall = parseInt(document.getElementById('edit-qty-ball').value, 10) || 0;
                     const qtyRtg = parseInt(document.getElementById('edit-qty-rtg').value, 10) || 0;
+                    
+                    // Pertahankan pcs lama jika ada, atau default 0
+                    let partsOld = item.qty_teks ? item.qty_teks.split('/') : [];
+                    const qtyPcs = parseInt(partsOld[3], 10) || item.qty_pcs || 0;
 
                     item.qty_krt = qtyKrt;
                     item.qty_ball = qtyBall;
                     item.qty_rtg = qtyRtg;
+                    item.qty_pcs = qtyPcs;
 
-                    let arrQty = [];
-                    if (qtyKrt > 0) arrQty.push(`${qtyKrt} KRT`);
-                    if (qtyBall > 0) arrQty.push(`${qtyBall} BALL`);
-                    if (qtyRtg > 0) arrQty.push(`${qtyRtg} RTG`);
-
-                    qtyValText = arrQty.length > 0 ? arrQty.join(' / ') : '0 KRT';
+                    qtyValText = `${qtyKrt}/${qtyBall}/${qtyRtg}/${qtyPcs}`;
                 } else {
                     const qtySingle = parseInt(document.getElementById('edit-qty-single').value, 10) || 0;
                     item.qty_single = qtySingle;
-                    qtyValText = `${qtySingle}`;
+                    qtyValText = `${qtySingle}/0/0/0`;
                 }
 
                 item.lokasi_rak = rakBaru;
@@ -2931,53 +2958,79 @@
             }
         }
 
-        // --- FUNGSI EXPORT LAPORAN REKAPITULASI KE EXCEL (.XLS) ---
+        // --- FUNGSI EXPORT LAPORAN REKAPITULASI DENGAN 2 SHEET (GABUNGAN & HASIL SO) ---
         function exportLaporanExcel() {
             const gudangAktif = localStorage.getItem('stomo_gudang') || 'GUDANG';
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
 
             if (!db) return customAlert("Database IndexedDB belum siap!");
 
-            const tx = db.transaction(["master_stok", "hasil_so"], "readonly");
-            const storeMaster = tx.objectStore("master_stok");
-            const storeSO = tx.objectStore("hasil_so");
+            // Ambil dropdown arsip tanggal yang sedang dipilih pada halaman laporan
+            const dropdownArsip = document.getElementById('filter-arsip-tanggal');
+            const selectedTanggal = dropdownArsip ? dropdownArsip.value : '';
 
-            let masterDataObj = null;
-            let semuaSO = [];
+            let folderId = selectedTanggal ? `${gudangClean}_${selectedTanggal}` : null;
 
-            const reqMaster = storeMaster.get(gudangClean);
-            reqMaster.onsuccess = function(e) {
-                const res = e.target.result;
-                if (res && res.data) masterDataObj = res.data;
-                else {
-                    try {
-                        const raw = localStorage.getItem(`stomo_master_${gudangClean}`);
-                        if (raw) masterDataObj = JSON.parse(raw);
-                    } catch(err) {}
-                }
-            };
+            if (typeof firebase === 'undefined' || !firebase.database) {
+                return customAlert("Koneksi Firebase tidak tersedia untuk mengambil data arsip laporan!");
+            }
 
-            const reqSO = storeSO.getAll();
-            reqSO.onsuccess = function(e) {
-                const data = e.target.result || [];
-                semuaSO = data.filter(item => String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase());
-            };
+            let targetRef = folderId ? firebase.database().ref(`stok_opname/${folderId}`) : null;
 
-            tx.oncomplete = function() {
+            const prosesExportData = (masterDataObj, semuaSO) => {
                 let masterArray = [];
                 if (masterDataObj) {
                     masterArray = Array.isArray(masterDataObj) ? masterDataObj : Object.values(masterDataObj);
                 }
 
+                const gudangUpper = gudangAktif.toUpperCase().trim();
+                const isGudangWH3Induk = gudangUpper === 'WH-3' || (gudangUpper.includes('WH-3') && !gudangUpper.includes('BLOK'));
+                const isGudangBlok = gudangUpper.includes('BLOK');
+
+                // --- 1. AKUMULASI GLOBAL MASTER STOK BLOK JIKA DI GUDANG BLOK ---
+                let globalMasterStokBlokMap = {};
+                if (isGudangBlok) {
+                    masterArray.forEach(m => {
+                        let kode = String(m.KODE || m.Kode || m.KODE_BARANG || m.kode_barang || '').trim().toUpperCase();
+                        let qtyKrt = parseInt(m.krt || m.KRT || m.K_AKHIR?.split('/')[0] || 0, 10);
+                        if (kode) {
+                            if (!globalMasterStokBlokMap[kode]) globalMasterStokBlokMap[kode] = 0;
+                            globalMasterStokBlokMap[kode] += qtyKrt;
+                        }
+                    });
+
+                    if (typeof masterDataObj === 'object' && !Array.isArray(masterDataObj)) {
+                        Object.keys(masterDataObj).forEach(namaBlok => {
+                            let isiBlok = masterDataObj[namaBlok];
+                            if (isiBlok && typeof isiBlok === 'object') {
+                                Object.keys(isiBlok).forEach(kodeBrg => {
+                                    let item = isiBlok[kodeBrg];
+                                    let kClean = String(kodeBrg || '').trim().toUpperCase();
+                                    if (!kClean || kClean === 'BLOK' || kClean === 'KODE' || kClean === 'K_AKHIR' || kClean === 'NAMA' || kClean.includes(' ')) return;
+                                    let kVal = parseInt(item.krt || item.KRT || 0, 10);
+                                    if (!globalMasterStokBlokMap[kClean]) globalMasterStokBlokMap[kClean] = 0;
+                                    globalMasterStokBlokMap[kClean] += kVal;
+                                });
+                            }
+                        });
+                    }
+                }
+
                 let semuaKodeBarang = new Set();
                 masterArray.forEach(m => {
                     let k = String(m.KODE || m.Kode || m.KODE_BARANG || '').trim().toUpperCase();
-                    if (k) semuaKodeBarang.add(k);
+                    if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) semuaKodeBarang.add(k);
                 });
                 semuaSO.forEach(so => {
                     let k = String(so.kode_barang || '').trim().toUpperCase();
-                    if (k) semuaKodeBarang.add(k);
+                    if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) semuaKodeBarang.add(k);
                 });
+
+                if (isGudangBlok) {
+                    Object.keys(globalMasterStokBlokMap).forEach(k => {
+                        if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) semuaKodeBarang.add(k);
+                    });
+                }
 
                 let listKode = [...semuaKodeBarang].sort();
                 if (listKode.length === 0) return customAlert("Tidak ada data laporan untuk di-export!");
@@ -2985,10 +3038,23 @@
                 let masterMap = {};
                 masterArray.forEach(m => {
                     let k = String(m.KODE || m.Kode || m.KODE_BARANG || '').trim().toUpperCase();
-                    if (k) masterMap[k] = m;
+                    if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA') masterMap[k] = m;
                 });
 
-                // Helper parsing format Bosnet "KRT/BALL/RTG/PCS"
+                if (isGudangBlok && typeof masterDataObj === 'object') {
+                    Object.keys(masterDataObj).forEach(namaBlok => {
+                        let isiBlok = masterDataObj[namaBlok];
+                        if (isiBlok && typeof isiBlok === 'object') {
+                            Object.keys(isiBlok).forEach(kodeBrg => {
+                                let kClean = String(kodeBrg || '').trim().toUpperCase();
+                                if (kClean && kClean !== 'BLOK' && kClean !== 'KODE' && kClean !== 'K_AKHIR' && kClean !== 'NAMA' && !kClean.includes(' ')) {
+                                    if (!masterMap[kClean]) masterMap[kClean] = isiBlok[kodeBrg];
+                                }
+                            });
+                        }
+                    });
+                }
+
                 const parseBosnetQty = (val) => {
                     if (!val || typeof val !== 'string') return { krt: 0, ball: 0, rtg: 0, pcs: 0 };
                     let p = val.split('/');
@@ -3000,28 +3066,76 @@
                     };
                 };
 
-                // 1. Petakan Kolom Unik Berdasarkan Rak & Akumulasi Qty
                 let kolomUnikMap = {};
                 let rekapData = {};
 
-                semuaSO.forEach(so => {
-                    let kode = String(so.kode_barang || '').trim().toUpperCase();
-                    let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
-                    let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
-                    if (!kode) return;
+                if (isGudangBlok) {
+                    let trackingEntriPetugas = {};
+                    semuaSO.forEach(so => {
+                        let kode = String(so.kode_barang || '').trim().toUpperCase();
+                        let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
+                        if (!kode) return;
 
-                    let kolomKey = `${rak}`;
-                    kolomUnikMap[kolomKey] = { rak: rak };
+                        let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
+                        let kolomKey = `${rak}`;
 
-                    if (!rekapData[kode]) rekapData[kode] = {};
-                    
-                    let qObj = parseBosnetQty(so.qty_teks);
-                    let valKrt = (parseInt(so.qty_krt) || qObj.krt);
-                    let valBall = (parseInt(so.qty_ball) || qObj.ball);
-                    let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
-                    let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+                        if (!kolomUnikMap[kolomKey]) kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
+                        if (ptg) kolomUnikMap[kolomKey].petugasSet.add(ptg);
 
-                    if (!rekapData[kode][kolomKey]) {
+                        if (!rekapData[kode]) rekapData[kode] = {};
+
+                        let qObj = parseBosnetQty(so.qty_teks);
+                        let valKrt = (parseInt(so.qty_krt) || qObj.krt);
+                        let valBall = (parseInt(so.qty_ball) || qObj.ball);
+                        let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
+                        let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+
+                        let entriKey = `${kode}_${rak}_${ptg}`;
+                        if (!trackingEntriPetugas[entriKey]) {
+                            trackingEntriPetugas[entriKey] = { krt: valKrt, ball: valBall, rtg: valRtg, pcs: valPcs };
+                        } else {
+                            trackingEntriPetugas[entriKey].krt += valKrt;
+                            trackingEntriPetugas[entriKey].ball += valBall;
+                            trackingEntriPetugas[entriKey].rtg += valRtg;
+                            trackingEntriPetugas[entriKey].pcs += valPcs;
+                        }
+                    });
+
+                    Object.keys(trackingEntriPetugas).forEach(entriKey => {
+                        let parts = entriKey.split('_');
+                        let kode = parts[0];
+                        let rak = parts[1];
+                        let dataPtg = trackingEntriPetugas[entriKey];
+
+                        if (!rekapData[kode][rak]) {
+                            rekapData[kode][rak] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
+                        } else {
+                            rekapData[kode][rak].krt = Math.max(rekapData[kode][rak].krt, dataPtg.krt);
+                            rekapData[kode][rak].ball = Math.max(rekapData[kode][rak].ball, dataPtg.ball);
+                            rekapData[kode][rak].rtg = Math.max(rekapData[kode][rak].rtg, dataPtg.rtg);
+                            rekapData[kode][rak].pcs = Math.max(rekapData[kode][rak].pcs, dataPtg.pcs);
+                        }
+                    });
+                } else {
+                    semuaSO.forEach(so => {
+                        let kode = String(so.kode_barang || '').trim().toUpperCase();
+                        let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
+                        if (!kode) return;
+
+                        let kolomKey = `${rak}`;
+                        if (!kolomUnikMap[kolomKey]) kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
+                        
+                        let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
+                        if (ptg) kolomUnikMap[kolomKey].petugasSet.add(ptg);
+
+                        if (!rekapData[kode]) rekapData[kode] = {};
+                        
+                        let qObj = parseBosnetQty(so.qty_teks);
+                        let valKrt = (parseInt(so.qty_krt) || qObj.krt);
+                        let valBall = (parseInt(so.qty_ball) || qObj.ball);
+                        let valRtg = (parseInt(so.qty_rtg) || qObj.rtg);
+                        let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
+
                         rekapData[kode][kolomKey] = { 
                             petugasSet: new Set([ptg]), 
                             krt: valKrt, 
@@ -3029,113 +3143,206 @@
                             rtg: valRtg, 
                             pcs: valPcs 
                         };
-                    } else {
-                        rekapData[kode][kolomKey].petugasSet.add(ptg);
-                        
-                        // Timpa dengan nilai acuan valid agar tidak terakumulasi ganda
-                        rekapData[kode][kolomKey].krt = valKrt;
-                        rekapData[kode][kolomKey].ball = valBall;
-                        rekapData[kode][kolomKey].rtg = valRtg;
-                        rekapData[kode][kolomKey].pcs = valPcs;
-                    }
-                });
+                    });
+                }
 
                 let daftarKolom = Object.keys(kolomUnikMap).sort();
 
-                // 2. Susun Header Excel
-                let excelRows = [];
-                let headerRow = ["NO", "KODE BARANG", "NAMA BARANG", "STOK BOSNET"];
+                // Format Tanggal SO Teks
+                let tglFormatTeks = "TERBARU";
+                if (selectedTanggal) {
+                    let partsTgl = selectedTanggal.split('_');
+                    if (partsTgl.length === 3) {
+                        const bulanNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                        let thn = partsTgl[0];
+                        let blnIdx = parseInt(partsTgl[1], 10) - 1;
+                        let tgl = partsTgl[2];
+                        tglFormatTeks = `${tgl} ${bulanNames[blnIdx] || partsTgl[1]} ${thn}`;
+                    } else {
+                        tglFormatTeks = selectedTanggal.replace(/_/g, '-');
+                    }
+                } else {
+                    let nowD = new Date();
+                    const bulanNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                    tglFormatTeks = `${nowD.getDate()} ${bulanNames[nowD.getMonth()]} ${nowD.getFullYear()}`;
+                }
+
+                // ==========================================
+                // SHEET 1: LAPORAN GABUNGAN (FULL BREAKDOWN RAK)
+                // ==========================================
+                let sheet1Rows = [];
+                sheet1Rows.push([`STOK OPNAME ${gudangAktif.toUpperCase()}`]);
+                sheet1Rows.push([`Tanggal SO: ${tglFormatTeks}`]);
+                sheet1Rows.push([]); // Spasi
+
+                let header1 = ["NO", "KODE BARANG", "NAMA BARANG"];
+                if (isGudangWH3Induk) {
+                    header1.push("STOK BOSNET", `[STOK BLOK] ${window._petugasBlokList || 'PETUGAS BLOK'}`);
+                } else if (isGudangBlok) {
+                    header1.push("STOK BLOK");
+                } else {
+                    header1.push("STOK BOSNET");
+                }
 
                 daftarKolom.forEach(kolomKey => {
-                    let petugasDiRak = new Set();
-                    semuaSO.forEach(so => {
-                        let r = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
-                        if (r === kolomKey) {
-                            petugasDiRak.add(String(so.nama_petugas || so.user_id || '').trim().toUpperCase());
-                        }
-                    });
-                    let namaPtgHeader = [...petugasDiRak].sort().join(' & ');
-                    headerRow.push(`${namaPtgHeader || 'PETUGAS'} [${kolomKey}]`);
+                    let infoKolom = kolomUnikMap[kolomKey];
+                    let namaPtgHeader = [...infoKolom.petugasSet].sort().join(' & ');
+                    header1.push(`${namaPtgHeader || 'PETUGAS'} [${kolomKey}]`);
                 });
+                header1.push("TOTAL REKAP QTY", "SELISIH", "KETERANGAN");
+                sheet1Rows.push(header1);
 
-                headerRow.push("TOTAL REKAP QTY", "SELISIH", "KETERANGAN");
-                excelRows.push(headerRow);
+                // ==========================================
+                // SHEET 2: HASIL SO (RINGKAS: STOK FISIK, SELISIH, KET)
+                // ==========================================
+                let sheet2Rows = [];
+                sheet2Rows.push([`STOK OPNAME ${gudangAktif.toUpperCase()}`]);
+                sheet2Rows.push([`Tanggal SO: ${tglFormatTeks}`]);
+                sheet2Rows.push([]); // Spasi
 
-                // 3. Susun Baris Data Excel Dengan Format Bosnet (KRT/BALL/RTG/PCS)
+                let header2 = ["NO", "KODE BARANG", "NAMA BARANG"];
+                if (isGudangWH3Induk) {
+                    header2.push("STOK BOSNET", `[STOK BLOK] ${window._petugasBlokList || 'PETUGAS BLOK'}`);
+                } else if (isGudangBlok) {
+                    header2.push("STOK BLOK");
+                } else {
+                    header2.push("STOK BOSNET");
+                }
+                header2.push("STOK FISIK", "SELISIH", "KETERANGAN");
+                sheet2Rows.push(header2);
+
+                // --- PIPELINE PISAH DATA BARIS PER BARIS ---
                 listKode.forEach((kode, idx) => {
                     const masterItem = masterMap[kode] || {};
-                    const namaBarang = masterItem.NAMA || masterItem.Nama || masterItem.BARANG || '-';
+                    const namaBarang = isGudangBlok ? '-' : (masterItem.NAMA || masterItem.Nama || masterItem.BARANG || masterItem.nama || '-');
                     const kAkhir = masterItem.K_AKHIR || masterItem.k_akhir || '0/0/0/0';
 
                     let masterObj = parseBosnetQty(kAkhir);
+                    let totalKrtBlok = (window.dataHasilBlokGlobal && window.dataHasilBlokGlobal[kode]) ? window.dataHasilBlokGlobal[kode] : 0;
+                    let stokBlokTeks = `${totalKrtBlok}/0/0/0`;
+                    let totalMasterBlokKrt = globalMasterStokBlokMap[kode] || masterObj.krt || 0;
+                    let masterStokBlokVal = `${totalMasterBlokKrt}/0/0/0`;
 
-                    let rowData = [idx + 1, kode, namaBarang, kAkhir];
+                    // Base data umum
+                    let baseData = [idx + 1, kode, namaBarang];
+                    if (isGudangWH3Induk) {
+                        baseData.push(kAkhir, stokBlokTeks);
+                    } else if (isGudangBlok) {
+                        baseData.push(masterStokBlokVal);
+                    } else {
+                        baseData.push(kAkhir);
+                    }
+
+                    let rowSheet1 = [...baseData];
                     let totalKrt = 0, totalBall = 0, totalRtg = 0, totalPcs = 0;
                     let adaDataInput = false;
 
+                    if (isGudangWH3Induk && totalKrtBlok > 0) {
+                        adaDataInput = true;
+                        totalKrt += totalKrtBlok;
+                    }
+
                     daftarKolom.forEach(kolomKey => {
                         const dataRak = rekapData[kode] && rekapData[kode][kolomKey];
-
                         if (dataRak) {
                             adaDataInput = true;
                             totalKrt += dataRak.krt;
                             totalBall += dataRak.ball;
                             totalRtg += dataRak.rtg;
                             totalPcs += dataRak.pcs;
-
-                            let qtyTeksFormat = `${dataRak.krt}/${dataRak.ball}/${dataRak.rtg}/${dataRak.pcs}`;
-                            rowData.push(qtyTeksFormat);
+                            rowSheet1.push(`${dataRak.krt}/${dataRak.ball}/${dataRak.rtg}/${dataRak.pcs}`);
                         } else {
-                            rowData.push("-");
+                            rowSheet1.push("-");
                         }
                     });
 
-                    // Hitung selisih per komponen
-                    let selisihKrt = totalKrt - masterObj.krt;
+                    let targetMasterKrt = isGudangBlok ? totalMasterBlokKrt : masterObj.krt;
+                    let selisihKrt = totalKrt - targetMasterKrt;
                     let selisihBall = totalBall - masterObj.ball;
                     let selisihRtg = totalRtg - masterObj.rtg;
                     let selisihPcs = totalPcs - masterObj.pcs;
 
+                    let rekapTeksFormat = `${totalKrt}/${totalBall}/${totalRtg}/${totalPcs}`;
                     let formatKrt = selisihKrt > 0 ? `+${selisihKrt}` : selisihKrt;
                     let formatBall = selisihBall > 0 ? `+${selisihBall}` : selisihBall;
                     let formatRtg = selisihRtg > 0 ? `+${selisihRtg}` : selisihRtg;
                     let formatPcs = selisihPcs > 0 ? `+${selisihPcs}` : selisihPcs;
-
-                    let rekapTeksFormat = `${totalKrt}/${totalBall}/${totalRtg}/${totalPcs}`;
                     let selisihTeksFormat = `${formatKrt}/${formatBall}/${formatRtg}/${formatPcs}`;
 
                     let isSesuai = (selisihKrt === 0 && selisihBall === 0 && selisihRtg === 0 && selisihPcs === 0);
                     let ket = "BELUM CEK";
-
                     if (adaDataInput) {
                         ket = isSesuai ? "SESUAI" : "SELISIH";
                     }
 
-                    rowData.push(adaDataInput ? rekapTeksFormat : "-");
-                    rowData.push(adaDataInput ? selisihTeksFormat : "-");
-                    rowData.push(ket);
+                    // Eksekusi Baris Sheet 1
+                    rowSheet1.push(adaDataInput ? rekapTeksFormat : "-");
+                    rowSheet1.push(adaDataInput ? selisihTeksFormat : "-");
+                    rowSheet1.push(ket);
+                    sheet1Rows.push(rowSheet1);
 
-                    excelRows.push(rowData);
+                    // Eksekusi Baris Sheet 2 (Langsung ke Stok Fisik, Selisih, Keterangan)
+                    let rowSheet2 = [...baseData];
+                    rowSheet2.push(adaDataInput ? rekapTeksFormat : "-");
+                    rowSheet2.push(adaDataInput ? selisihTeksFormat : "-");
+                    rowSheet2.push(ket);
+                    sheet2Rows.push(rowSheet2);
                 });
 
-                // 4. Unduh File (.xls) Menggunakan SheetJS
-                const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
+                // --- BUILD MULTI-SHEET WORKBOOK ---
                 const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Gabungan");
+
+                const ws1 = XLSX.utils.aoa_to_sheet(sheet1Rows);
+                XLSX.utils.book_append_sheet(workbook, ws1, "Laporan Gabungan");
+
+                const ws2 = XLSX.utils.aoa_to_sheet(sheet2Rows);
+                XLSX.utils.book_append_sheet(workbook, ws2, "Hasil SO");
 
                 const now = new Date();
                 const YYYY = now.getFullYear();
                 const MM = String(now.getMonth() + 1).padStart(2, '0');
                 const DD = String(now.getDate()).padStart(2, '0');
-                const namaFile = `Laporan_StOMo_${gudangClean}_${YYYY}_${MM}_${DD}.xls`;
+                const namaFile = `Laporan_StOMo_${gudangClean}_${selectedTanggal || `${YYYY}_${MM}_${DD}`}.xls`;
 
-                // Set bookType ke 'xls' agar menghasilkan format file .xls
                 XLSX.writeFile(workbook, namaFile, { bookType: 'xls' });
 
                 if (typeof customAlert === 'function') {
-                    customAlert(`Berhasil mengunduh Laporan Excel:\n${namaFile}`);
+                    customAlert(`Berhasil mengunduh Laporan Excel (2 Sheet):\n${namaFile}`);
                 }
             };
+
+            if (targetRef) {
+                targetRef.once('value').then(snap => {
+                    const folderData = snap.val() || {};
+                    let masterDataObj = folderData.master_data || null;
+                    let semuaSO = folderData.hasil_so ? Object.values(folderData.hasil_so) : [];
+                    prosesExportData(masterDataObj, semuaSO);
+                }).catch(err => {
+                    console.error("Gagal ambil data arsip untuk export:", err);
+                    customAlert("Gagal mengambil data arsip dari server untuk export Excel.");
+                });
+            } else {
+                const tx = db.transaction(["master_stok", "hasil_so"], "readonly");
+                const storeMaster = tx.objectStore("master_stok");
+                const storeSO = tx.objectStore("hasil_so");
+
+                let masterDataObj = null;
+                let semuaSO = [];
+
+                storeMaster.get(gudangClean).onsuccess = function(e) {
+                    const res = e.target.result;
+                    if (res && res.data) masterDataObj = res.data;
+                };
+
+                storeSO.getAll().onsuccess = function(e) {
+                    const data = e.target.result || [];
+                    semuaSO = data.filter(item => String(item.gudang || '').trim().toUpperCase() === gudangAktif.toUpperCase());
+                };
+
+                tx.oncomplete = function() {
+                    prosesExportData(masterDataObj, semuaSO);
+                };
+            }
         }
 
 
