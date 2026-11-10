@@ -3254,12 +3254,13 @@
                         let dataPtg = trackingEntriPetugas[entriKey];
 
                         if (!rekapData[kode][rak]) {
-                            rekapData[kode][rak] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
+                        rekapData[kode][rak] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
                         } else {
-                            rekapData[kode][rak].krt = Math.max(rekapData[kode][rak].krt, dataPtg.krt);
-                            rekapData[kode][rak].ball = Math.max(rekapData[kode][rak].ball, dataPtg.ball);
-                            rekapData[kode][rak].rtg = Math.max(rekapData[kode][rak].rtg, dataPtg.rtg);
-                            rekapData[kode][rak].pcs = Math.max(rekapData[kode][rak].pcs, dataPtg.pcs);
+                            // PERBAIKAN: Akumulasi nilai krt, ball, rtg, pcs untuk multi-input pada rak yang sama
+                            rekapData[kode][rak].krt += dataPtg.krt;
+                            rekapData[kode][rak].ball += dataPtg.ball;
+                            rekapData[kode][rak].rtg += dataPtg.rtg;
+                            rekapData[kode][rak].pcs += dataPtg.pcs;
                         }
                     });
                 } else {
@@ -3900,10 +3901,11 @@
                         };
                     } else {
                         kolomUnikMap[kolomKey].petugasSet.add(ptg);
-                        rekapData[kode][kolomKey].krt = valKrt;
-                        rekapData[kode][kolomKey].ball = valBall;
-                        rekapData[kode][kolomKey].rtg = valRtg;
-                        rekapData[kode][kolomKey].pcs = valPcs;
+                        // PERBAIKAN: Gunakan penjumlahan (+=) agar input ganda dengan kode & rak sama terakumulasi totalnya
+                        rekapData[kode][kolomKey].krt += valKrt;
+                        rekapData[kode][kolomKey].ball += valBall;
+                        rekapData[kode][kolomKey].rtg += valRtg;
+                        rekapData[kode][kolomKey].pcs += valPcs;
                     }
                 });
             }
