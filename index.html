@@ -687,13 +687,17 @@
                         <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-sky-600 dark:bg-sky-500 animate-pulse"></div>
                         <span class="text-xs font-black text-sky-600 dark:text-sky-400">v0.1.3 | 10 November 2026 (Terbaru)</span>
                         <ul class="text-xs text-slate-500 dark:text-slate-400 mt-2 list-disc ml-4 space-y-1.5 leading-relaxed">
-                            <li><strong>Format Tanggal Standar dd/mm/yyyy:</strong> Pembaruan label pilihan arsip Master Stok serta notifikasi unduh/unggah menjadi format <code>Stok Bosnet : dd/mm/yyyy</code>.</li>
+                            <li><strong>Format Tanggal Standar dd/mm/yyyy:</strong> Pembaruan label pilihan arsip Master Stok, notifikasi unduh/unggah, serta opsi dropdown menjadi format <code>Arsip SO : dd/mm/yyyy</code>.</li>
+                            <li><strong>Integrasi Laporan SO Global RTDB:</strong> Pembatasan dropdown arsip laporan agar hanya menampilkan tanggal yang benar-benar memiliki data di Firebase RTDB, lengkap dengan pesan indikator jika arsip global belum tersedia.</li>
+                            <li><strong>Multi-Fallback Master Data RTDB:</strong> Penyesuaian penarikan Master Stok Bosnet secara otomatis dan bertingkat dari RTDB server, arsip global, hingga penyimpanan lokal untuk memastikan kolom Stok Bosnet tidak bernilai 0.</li>
+                            <li><strong>Penanganan Khusus & Null-Safety Gudang Blok:</strong> Optimalisasi kalkulasi dan proteksi data untuk gudang berjenis blok (seperti WH-3 Blok & WH-1 Blok-1) agar terhindar dari error <em>TypeError</em> saat data master belum diunduh.</li>
+                            <li><strong>Dropdown Lokasi Ruang WH-1 Blok-1:</strong> Penambahan opsi pilihan lokasi ruang dinamis (<code>RUANG KIRI</code>, <code>RUANG TENGAH</code>, <code>RUANG KANAN</code>) pada form input cek fisik gudang WH-1 Blok-1.</li>
                             <li><strong>Ekspor Excel Multi-Sheet:</strong> Penyempurnaan laporan Excel menjadi 2 sheet (Sheet 1: Laporan Gabungan lengkap per rak, Sheet 2: Hasil SO ringkas dengan kolom Stok Fisik, Selisih, dan Keterangan) lengkap dengan baris judul dinamis dan tanggal SO.</li>
                             <li><strong>Layout Responsif 2 Baris (Tab Lihat & Riwayat):</strong> Perombakan tata letak UI menjadi dua baris sejajar yang rapi di layar ponsel (Baris atas: nomor, lokasi rak, & tombol aksi centang/silang berdampingan; Baris bawah: kode barang & qty sejajar lurus ke kiri).</li>
                             <li><strong>Penguncian Baris Data Valid:</strong> Penerapan sistem keamanan di Tab Lihat di mana data yang sudah berstatus <em>valid</em> (centang hijau) dikunci dan tidak dapat diklik untuk membuka modal edit.</li>
-                            <li><strong>Modal Edit Universal & Parser Tangguh:</strong> Penyesuaian modal edit agar berlaku untuk semua jenis gudang dengan dukungan *parser* nilai kuantitas otomatis serta indikator warna latar belakang card yang dinamis.</li>
-                            <li><strong>Pembersihan Sesi Logout Terisolasi:</strong> Optimalisasi fungsi *logout* agar spesifik menghapus data lokal berprefiks <code>stomo_</code> dan IndexedDB StOMo tanpa memengaruhi data aplikasi lain di domain yang sama.</li>
-                            <li><strong>Perbaikan Cache Ikon PWA Windows:</strong> Peningkatan penanganan ikon desktop PWA menggunakan tag meta favicon dan pengaturan *Icon Cache*.</li>
+                            <li><strong>Modal Edit Universal & Parser Tangguh:</strong> Penyesuaian modal edit agar berlaku untuk semua jenis gudang dengan dukungan parser nilai kuantitas otomatis serta indikator warna latar belakang card yang dinamis.</li>
+                            <li><strong>Pembersihan Sesi Logout Terisolasi:</strong> Optimalisasi fungsi <em>logout</em> agar spesifik menghapus data lokal berprefiks <code>stomo_</code> dan IndexedDB StOMo tanpa memengaruhi data aplikasi lain di domain yang sama.</li>
+                            <li><strong>Perbaikan Cache Ikon PWA Windows:</strong> Peningkatan penanganan ikon desktop PWA menggunakan tag meta favicon dan pengaturan <em>Icon Cache</em>.</li>
                         </ul>
                     </div>
 
@@ -3419,7 +3423,9 @@
 
             const gudangAktif = localStorage.getItem('stomo_gudang') || '';
             const gudangClean = gudangAktif.replace(/\s+/g, '_');
-            const isBlokGudang = gudangAktif.toUpperCase().includes('BLOK') || gudangAktif.toUpperCase() === 'WH-3 BLOK';
+            
+            // Perbaikan: isBlokGudang HANYA aktif untuk WH-3 BLOK agar WH-1 BLOK-1 tidak lari ke stok_blok
+            const isBlokGudang = gudangAktif.toUpperCase() === 'WH-3 BLOK' || gudangAktif.toUpperCase() === 'WH-3_BLOK';
 
             // 1. Ambil daftar tanggal arsip yang tersedia secara global di Firebase RTDB
             const refStokOpname = firebase.database().ref('stok_opname');
@@ -3505,7 +3511,7 @@
                                 return renderTabelLaporan(globalMaster, semuaSO, gudangAktif, selectedTanggal);
                             }
 
-                            // Jika gudang blok, ambil dari root stok_blok
+                            // Jika gudang blok (WH-3 BLOK), ambil dari root stok_blok
                             if (isBlokGudang) {
                                 return firebase.database().ref('stok_blok').once('value').then(blokSnap => {
                                     let blokRaw = blokSnap.val() || {};
@@ -3583,7 +3589,9 @@
 
             const gudangUpper = gudangAktif.toUpperCase().trim();
             const isGudangWH3Induk = gudangUpper === 'WH-3' || (gudangUpper.includes('WH-3') && !gudangUpper.includes('BLOK'));
-            const isGudangBlok = gudangUpper.includes('BLOK');
+            
+            // Perbaikan definisi: isGudangBlok HANYA untuk WH-3 BLOK, sedangkan WH-1 BLOK-1 menggunakan Stok Bosnet standar
+            const isGudangBlok = gudangUpper === 'WH-3 BLOK' || gudangUpper === 'WH-3_BLOK';
 
             // --- AMBIL DATA HASIL OPNAME DARI WH-3_BLOK JIKA DI WH-3 INDUK ---
             let rekapQtyBlokMap = {};
@@ -3625,7 +3633,6 @@
                             });
                         }
 
-                        // SETELAH DIDAPAT PER PETUGAS, REKAP PER KODE BARANG TANPA MENGGANDAKAN CROSS-CHECK PETUGAS BERBEDA
                         let mapRekapBersih = {};
                         let tempPerRak = {};
 
@@ -3665,7 +3672,6 @@
                 }
             }
 
-            // Helper khusus WH-3 Induk untuk akumulasi per petugas dulu
             function processItemWH3Induk(itemSo, pSet, tempEntriBlok) {
                 if (!itemSo || typeof itemSo !== 'object') return;
                 let kBarang = String(itemSo.kode_barang || '').trim().toUpperCase();
@@ -3953,7 +3959,7 @@
                 const no = index + 1;
                 const masterItem = masterMap[kode] || {};
                 
-                const namaBarang = isGudangBlok ? '-' : (masterItem.NAMA || masterItem.Nama || masterItem.BARANG || masterItem.nama || '-');
+                const namaBarang = (masterItem.NAMA || masterItem.Nama || masterItem.BARANG || masterItem.nama || '-');
                 const kAkhir = masterItem.K_AKHIR || masterItem.k_akhir || '0/0/0/0';
 
                 let masterObj = parseBosnetQty(kAkhir);
@@ -3969,7 +3975,7 @@
                         <td class="p-3 text-center font-bold text-slate-400 text-[11px] align-middle">${no}</td>
                         <td class="p-3 align-middle">
                             <div class="font-black text-slate-800 dark:text-slate-200 uppercase">${kode}</div>
-                            ${!isGudangBlok ? `<div class="text-[10px] text-slate-400 truncate max-w-xs uppercase">${namaBarang}</div>` : ''}
+                            <div class="text-[10px] text-slate-400 truncate max-w-xs uppercase">${namaBarang}</div>
                         </td>
                 `;
 
