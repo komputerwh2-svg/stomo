@@ -1236,7 +1236,7 @@
             }
         });
 
-        // --- EFEK GETAR GLOBAL (HAPTIC FEEDBACK OTOMATIS) ---
+        // --- EFEK GETAR GLOBAL (HAPTIC FEEDBACK OTOMATIS & RESPONSIF) ---
         document.addEventListener('DOMContentLoaded', () => {
             // Fungsi helper pemanggil getar aman
             const triggerHaptic = (duration = 35) => {
@@ -1249,21 +1249,21 @@
                 }
             };
 
-            // 1. Getar saat mengklik tombol, link, atau elemen interaktif
-            document.addEventListener('click', (e) => {
-                const target = e.target.closest('button, a, input[type="button"], input[type="submit"], .clickable, role="button"');
+            // 1. Getar instan seketika tombol disentuh menggunakan pointerdown
+            document.addEventListener('pointerdown', (e) => {
+                const target = e.target.closest('button, a, input[type="button"], input[type="submit"], .clickable, [role="button"]');
                 if (target) {
-                    triggerHaptic(35); // Getar pendek & lembut saat diklik
+                    triggerHaptic(35); // Getar pendek & mantap saat tombol disentuh
                 }
-            });
+            }, { passive: true });
 
-            // 2. Getar lembut saat mulai mengetik atau fokus ke kolom input / select
+            // 2. Getar lembut saat fokus ke kolom input / select
             document.addEventListener('focusin', (e) => {
                 const target = e.target;
                 if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
-                    triggerHaptic(20); // Getar sangat halus saat kolom input disentuh/difokuskan
+                    triggerHaptic(20); // Getar halus saat kolom input disentuh
                     
-                    // Sekalian aktifkan auto-scroll agar tidak tertutup keyboard HP
+                    // Auto-scroll agar tidak tertutup keyboard HP
                     setTimeout(() => {
                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }, 300);
