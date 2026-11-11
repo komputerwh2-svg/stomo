@@ -3614,7 +3614,7 @@
             });
         }
 
-        // --- RENDER TABEL REKAPITULASI (FORMAT BOSNET KRT/BALL/RTG/PCS) ---
+        // --- RENDER TABEL REKAPITULASI (FORMAT BOSNET KRT/BALL/RTG/PCS DENGAN FULL STICKY & INNER SCROLL) ---
         function renderTabelLaporan(masterData, semuaSO, gudangAktif, tanggalArsip = "") {
             const container = document.getElementById('container-tabel-laporan');
             if (!container) return;
@@ -3630,8 +3630,6 @@
 
             const gudangUpper = gudangAktif.toUpperCase().trim();
             const isGudangWH3Induk = gudangUpper === 'WH-3' || (gudangUpper.includes('WH-3') && !gudangUpper.includes('BLOK'));
-            
-            // Perbaikan definisi: isGudangBlok HANYA untuk WH-3 BLOK, sedangkan WH-1 BLOK-1 menggunakan Stok Bosnet standar
             const isGudangBlok = gudangUpper === 'WH-3 BLOK' || gudangUpper === 'WH-3_BLOK';
 
             // --- AMBIL DATA HASIL OPNAME DARI WH-3_BLOK JIKA DI WH-3 INDUK ---
@@ -3647,7 +3645,7 @@
                     
                     firebase.database().ref(`stok_opname`).once('value').then(snap => {
                         const allStokOpname = snap.val();
-                        let tempEntriBlok = {}; // Untuk melacak (kode_rak_petugas)
+                        let tempEntriBlok = {}; 
                         let pSet = new Set();
 
                         if (allStokOpname) {
@@ -3668,7 +3666,6 @@
                                             }
                                         });
                                     }
-                                    
                                     extractHasilSo(folderData);
                                 }
                             });
@@ -3680,7 +3677,6 @@
                         Object.keys(tempEntriBlok).forEach(entriKey => {
                             let [kode, rak] = entriKey.split('_');
                             let valKrt = tempEntriBlok[entriKey];
-
                             let rakKey = `${kode}_${rak}`;
                             if (!tempPerRak[rakKey]) {
                                 tempPerRak[rakKey] = valKrt;
@@ -3724,24 +3720,18 @@
                 if (pName && pName !== 'UMUM') pSet.add(pName);
                 if (kBarang) {
                     let key = `${kBarang}_${rak}_${pName}`;
-                    if (!tempEntriBlok[key]) {
-                        tempEntriBlok[key] = 0;
-                    }
+                    if (!tempEntriBlok[key]) tempEntriBlok[key] = 0;
                     tempEntriBlok[key] += kKrt;
                 }
             }
 
-            // --- AKUMULASI GLOBAL MASTER STOK BLOK DARI MASTER LOKAL / INDEXEDDB ---
             let globalMasterStokBlokMap = {};
             if (isGudangBlok) {
                 masterArray.forEach(m => {
                     let kode = String(m.KODE || m.Kode || m.KODE_BARANG || m.kode_barang || '').trim().toUpperCase();
                     let qtyKrt = parseInt(m.krt || m.KRT || m.K_AKHIR?.split('/')[0] || 0, 10);
-                    
                     if (kode) {
-                        if (!globalMasterStokBlokMap[kode]) {
-                            globalMasterStokBlokMap[kode] = 0;
-                        }
+                        if (!globalMasterStokBlokMap[kode]) globalMasterStokBlokMap[kode] = 0;
                         globalMasterStokBlokMap[kode] += qtyKrt;
                     }
                 });
@@ -3753,16 +3743,10 @@
                             Object.keys(isiBlok).forEach(kodeBrg => {
                                 let item = isiBlok[kodeBrg];
                                 let kClean = String(kodeBrg || '').trim().toUpperCase();
-                                
                                 if (!kClean || kClean === 'BLOK' || kClean === 'KODE' || kClean === 'K_AKHIR' || kClean === 'NAMA' || kClean.includes(' ')) return;
-
                                 let kVal = parseInt(item.krt || item.KRT || 0, 10);
-                                if (kClean) {
-                                    if (!globalMasterStokBlokMap[kClean]) {
-                                        globalMasterStokBlokMap[kClean] = 0;
-                                    }
-                                    globalMasterStokBlokMap[kClean] += kVal;
-                                }
+                                if (!globalMasterStokBlokMap[kClean]) globalMasterStokBlokMap[kClean] = 0;
+                                globalMasterStokBlokMap[kClean] += kVal;
                             });
                         }
                     });
@@ -3781,9 +3765,7 @@
 
             if (isGudangBlok) {
                 Object.keys(globalMasterStokBlokMap).forEach(k => {
-                    if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) {
-                        semuaKodeBarang.add(k);
-                    }
+                    if (k && k !== 'BLOK' && k !== 'KODE' && k !== 'K_AKHIR' && k !== 'NAMA' && !k.includes(' ')) semuaKodeBarang.add(k);
                 });
             }
 
@@ -3802,9 +3784,7 @@
                         Object.keys(isiBlok).forEach(kodeBrg => {
                             let kClean = String(kodeBrg || '').trim().toUpperCase();
                             if (kClean && kClean !== 'BLOK' && kClean !== 'KODE' && kClean !== 'K_AKHIR' && kClean !== 'NAMA' && !kClean.includes(' ')) {
-                                if (!masterMap[kClean]) {
-                                    masterMap[kClean] = isiBlok[kodeBrg];
-                                }
+                                if (!masterMap[kClean]) masterMap[kClean] = isiBlok[kodeBrg];
                             }
                         });
                     }
@@ -3825,10 +3805,8 @@
             let kolomUnikMap = {};
             let rekapData = {};
 
-            // --- PERLAKUAN KHUSUS BERDASARKAN JENIS GUDANG ---
             if (isGudangBlok) {
                 let trackingEntriPetugas = {};
-
                 semuaSO.forEach(so => {
                     let kode = String(so.kode_barang || '').trim().toUpperCase();
                     let rak = String(so.lokasi_rak || 'UMUM').trim().toUpperCase();
@@ -3837,9 +3815,7 @@
                     let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
                     let kolomKey = `${rak}`;
 
-                    if (!kolomUnikMap[kolomKey]) {
-                        kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
-                    }
+                    if (!kolomUnikMap[kolomKey]) kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
                     if (ptg) kolomUnikMap[kolomKey].petugasSet.add(ptg);
 
                     if (!rekapData[kode]) rekapData[kode] = {};
@@ -3851,7 +3827,6 @@
                     let valPcs = (parseInt(so.qty_pcs) || qObj.pcs);
 
                     let entriKey = `${kode}_${rak}_${ptg}`;
-
                     if (!trackingEntriPetugas[entriKey]) {
                         trackingEntriPetugas[entriKey] = { krt: valKrt, ball: valBall, rtg: valRtg, pcs: valPcs };
                     } else {
@@ -3867,18 +3842,16 @@
                     let kode = parts[0];
                     let rak = parts[1];
                     let dataPtg = trackingEntriPetugas[entriKey];
-                    let kolomKey = rak;
 
-                    if (!rekapData[kode][kolomKey]) {
-                        rekapData[kode][kolomKey] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
+                    if (!rekapData[kode][rak]) {
+                        rekapData[kode][rak] = { krt: dataPtg.krt, ball: dataPtg.ball, rtg: dataPtg.rtg, pcs: dataPtg.pcs };
                     } else {
-                        rekapData[kode][kolomKey].krt = Math.max(rekapData[kode][kolomKey].krt, dataPtg.krt);
-                        rekapData[kode][kolomKey].ball = Math.max(rekapData[kode][kolomKey].ball, dataPtg.ball);
-                        rekapData[kode][kolomKey].rtg = Math.max(rekapData[kode][kolomKey].rtg, dataPtg.rtg);
-                        rekapData[kode][kolomKey].pcs = Math.max(rekapData[kode][kolomKey].pcs, dataPtg.pcs);
+                        rekapData[kode][rak].krt += dataPtg.krt;
+                        rekapData[kode][rak].ball += dataPtg.ball;
+                        rekapData[kode][rak].rtg += dataPtg.rtg;
+                        rekapData[kode][rak].pcs += dataPtg.pcs;
                     }
                 });
-
             } else {
                 semuaSO.forEach(so => {
                     let kode = String(so.kode_barang || '').trim().toUpperCase();
@@ -3886,9 +3859,7 @@
                     if (!kode) return;
 
                     let kolomKey = `${rak}`;
-                    if (!kolomUnikMap[kolomKey]) {
-                        kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
-                    }
+                    if (!kolomUnikMap[kolomKey]) kolomUnikMap[kolomKey] = { rak: rak, petugasSet: new Set() };
                     
                     let ptg = String(so.nama_petugas || so.user_id || 'UMUM').trim().toUpperCase();
                     if (ptg) kolomUnikMap[kolomKey].petugasSet.add(ptg);
@@ -3911,7 +3882,6 @@
                         };
                     } else {
                         kolomUnikMap[kolomKey].petugasSet.add(ptg);
-                        // PERBAIKAN: Gunakan penjumlahan (+=) agar input ganda dengan kode & rak sama terakumulasi totalnya
                         rekapData[kode][kolomKey].krt += valKrt;
                         rekapData[kode][kolomKey].ball += valBall;
                         rekapData[kode][kolomKey].rtg += valRtg;
@@ -3944,54 +3914,57 @@
                 return;
             }
 
+            // --- STRUKTUR HTML TABEL DENGAN INNER VERTICAL & HORIZONTAL SCROLL + FULL STICKY ---
             let html = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                    <div class="overflow-x-auto max-h-[calc(100vh-270px)] relative">
+                        <table class="w-full text-left border-collapse border-separate border-spacing-0">
                             <thead>
-                                <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
-                                    <th class="p-3 text-center w-10">No</th>
-                                    <th class="p-3 min-w-[200px]">Kode & Nama Barang</th>
+                                <tr class="bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                    <th class="p-3 text-center w-10 sticky left-0 top-0 bg-slate-100 dark:bg-slate-800 z-50 border-b border-r border-slate-200 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">No</th>
+                                    <th class="p-3 min-w-[200px] sticky left-10 top-0 bg-slate-100 dark:bg-slate-800 z-50 border-b border-r border-slate-200 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Kode & Nama Barang</th>
             `;
 
             if (isGudangWH3Induk) {
                 html += `
-                    <th class="p-3 text-center min-w-[110px]">Stok Bosnet</th>
-                    <th class="p-3 text-center min-w-[140px] bg-amber-50/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                    <th class="p-3 text-center min-w-[110px] sticky left-[240px] top-0 bg-slate-100 dark:bg-slate-800 z-50 border-b border-r border-slate-200 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Stok Bosnet</th>
+                    <th class="p-3 text-center min-w-[140px] bg-amber-100/90 dark:bg-amber-950/90 text-amber-700 dark:text-amber-400 sticky left-[350px] top-0 z-50 border-b border-r border-slate-200 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                         <div class="text-[9px] font-black flex items-center justify-center gap-1">
                             <i class="fa-solid fa-users text-[8px]"></i> ${window._petugasBlokList || 'PETUGAS BLOK'}
                         </div>
-                        <span class="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 px-1.5 py-0.2 rounded text-[8px] font-extrabold inline-block mt-0.5">[STOK BLOK]</span>
+                        <span class="bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded text-[8px] font-extrabold inline-block mt-0.5">[STOK BLOK]</span>
                     </th>
                 `;
             } else if (isGudangBlok) {
                 html += `
-                    <th class="p-3 text-center min-w-[110px] bg-amber-50/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">Stok Blok</th>
+                    <th class="p-3 text-center min-w-[110px] bg-amber-100/90 dark:bg-amber-950/90 text-amber-700 dark:text-amber-400 sticky left-[240px] top-0 z-50 border-b border-r border-slate-200 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Stok Blok</th>
                 `;
             } else {
                 html += `
-                    <th class="p-3 text-center min-w-[110px]">Stok Bosnet</th>
+                    <th class="p-3 text-center min-w-[110px] sticky left-[240px] top-0 bg-slate-100 dark:bg-slate-800 z-50 border-b border-r border-slate-200 dark:border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Stok Bosnet</th>
                 `;
             }
 
+            // Header Kolom Rak Petugas di Tengah (Dapat Digeser Horizontal)
             daftarKolom.forEach(kolomKey => {
                 let infoKolom = kolomUnikMap[kolomKey];
                 let namaPtgHeader = [...infoKolom.petugasSet].sort().join(' & ');
 
                 html += `
-                    <th class="p-3 text-center bg-sky-50/70 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 min-w-[140px]">
+                    <th class="p-3 text-center bg-sky-100/90 dark:bg-sky-950/90 text-sky-700 dark:text-sky-300 min-w-[140px] sticky top-0 z-30 border-b border-r border-slate-200 dark:border-slate-700">
                         <div class="text-[9px] font-black flex items-center justify-center gap-1">
                             <i class="fa-solid fa-users text-[8px]"></i> ${namaPtgHeader || 'PETUGAS'}
                         </div>
-                        <span class="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 px-1.5 py-0.2 rounded text-[8px] font-extrabold inline-block mt-0.5">[${kolomKey}]</span>
+                        <span class="bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded text-[8px] font-extrabold inline-block mt-0.5">[${kolomKey}]</span>
                     </th>
                 `;
             });
 
+            // Header Kolom Kanan yang Dikunci (Sticky Right)
             html += `
-                                    <th class="p-3 text-center bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 min-w-[110px]">Total QTY Rekap</th>
-                                    <th class="p-3 text-center bg-purple-50/70 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 min-w-[100px]">Selisih</th>
-                                    <th class="p-3 text-center min-w-[130px]">Keterangan</th>
+                                    <th class="p-3 text-center bg-emerald-100/90 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 min-w-[110px] sticky right-[230px] top-0 z-50 border-b border-l border-slate-200 dark:border-slate-700 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total QTY Rekap</th>
+                                    <th class="p-3 text-center bg-purple-100/90 dark:bg-purple-950/90 text-purple-700 dark:text-purple-300 min-w-[100px] sticky right-[130px] top-0 z-50 border-b border-slate-200 dark:border-slate-700 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Selisih</th>
+                                    <th class="p-3 text-center min-w-[130px] sticky right-0 top-0 bg-slate-100 dark:bg-slate-800 z-50 border-b border-slate-200 dark:border-slate-700 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -4014,28 +3987,28 @@
 
                 html += `
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                        <td class="p-3 text-center font-bold text-slate-400 text-[11px] align-middle">${no}</td>
-                        <td class="p-3 align-middle">
+                        <td class="p-3 text-center font-bold text-slate-400 text-[11px] align-middle sticky left-0 bg-white dark:bg-slate-900 z-20 border-r border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${no}</td>
+                        <td class="p-3 align-middle sticky left-10 bg-white dark:bg-slate-900 z-20 border-r border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                             <div class="font-black text-slate-800 dark:text-slate-200 uppercase">${kode}</div>
                             ${!isGudangBlok ? `<div class="text-[10px] text-slate-400 truncate max-w-xs uppercase">${namaBarang}</div>` : ''}
                         </td>
                 `;
 
                 if (isGudangWH3Induk) {
-                    html += `<td class="p-3 text-center font-black text-sky-600 dark:text-sky-400 font-mono align-middle">${kAkhir}</td>`;
+                    html += `<td class="p-3 text-center font-black text-sky-600 dark:text-sky-400 font-mono align-middle sticky left-[240px] bg-white dark:bg-slate-900 z-20 border-r border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${kAkhir}</td>`;
                     html += `
-                        <td class="p-3 text-center font-black text-amber-600 dark:text-amber-400 font-mono align-middle bg-amber-50/20 dark:bg-amber-950/10">
+                        <td class="p-3 text-center font-black text-amber-600 dark:text-amber-400 font-mono align-middle bg-amber-50/40 dark:bg-amber-950/20 sticky left-[350px] z-20 border-r border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                             ${stokBlokTeks}
                         </td>
                     `;
                 } else if (isGudangBlok) {
                     html += `
-                        <td class="p-3 text-center font-black text-amber-600 dark:text-amber-400 font-mono align-middle bg-amber-50/20 dark:bg-amber-950/10">
+                        <td class="p-3 text-center font-black text-amber-600 dark:text-amber-400 font-mono align-middle bg-amber-50/40 dark:bg-amber-950/20 sticky left-[240px] z-20 border-r border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                             ${masterStokBlokVal}
                         </td>
                     `;
                 } else {
-                    html += `<td class="p-3 text-center font-black text-sky-600 dark:text-sky-400 font-mono align-middle">${kAkhir}</td>`;
+                    html += `<td class="p-3 text-center font-black text-sky-600 dark:text-sky-400 font-mono align-middle sticky left-[240px] bg-white dark:bg-slate-900 z-20 border-r border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${kAkhir}</td>`;
                 }
 
                 let totalKrt = 0, totalBall = 0, totalRtg = 0, totalPcs = 0;
@@ -4059,12 +4032,12 @@
                         let qtyTeksFormat = `${dataRak.krt}/${dataRak.ball}/${dataRak.rtg}/${dataRak.pcs}`;
 
                         html += `
-                            <td class="p-3 text-center align-middle font-black text-emerald-600 dark:text-emerald-400 font-mono bg-sky-50/20 dark:bg-sky-950/10">
+                            <td class="p-3 text-center align-middle font-black text-emerald-600 dark:text-emerald-400 font-mono bg-sky-50/20 dark:bg-sky-950/10 border-r border-slate-100 dark:border-slate-800">
                                 ${qtyTeksFormat}
                             </td>
                         `;
                     } else {
-                        html += `<td class="p-3 text-center text-slate-300 dark:text-slate-700 italic align-middle">-</td>`;
+                        html += `<td class="p-3 text-center text-slate-300 dark:text-slate-700 italic align-middle border-r border-slate-100 dark:border-slate-800">-</td>`;
                     }
                 });
 
@@ -4099,13 +4072,13 @@
                 }
 
                 html += `
-                        <td class="p-3 text-center font-black text-emerald-600 dark:text-emerald-400 font-mono align-middle bg-emerald-50/20 dark:bg-emerald-950/10 text-xs">
+                        <td class="p-3 text-center font-black text-emerald-600 dark:text-emerald-400 font-mono align-middle bg-emerald-50/40 dark:bg-emerald-950/20 text-xs sticky right-[230px] z-20 border-l border-slate-100 dark:border-slate-800 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                             ${adaDataInput ? rekapTeksFormat : '-'}
                         </td>
-                        <td class="p-3 text-center font-black font-mono align-middle bg-purple-50/20 dark:bg-purple-950/10 text-xs text-purple-700 dark:text-purple-300">
+                        <td class="p-3 text-center font-black font-mono align-middle bg-purple-50/40 dark:bg-purple-950/20 text-xs text-purple-700 dark:text-purple-300 sticky right-[130px] z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                             ${adaDataInput ? selisihTeksFormat : '-'}
                         </td>
-                        <td class="p-3 text-center align-middle">
+                        <td class="p-3 text-center align-middle sticky right-0 bg-white dark:bg-slate-900 z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                             ${badgeKeterangan}
                         </td>
                     </tr>
