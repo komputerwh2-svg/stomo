@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
     <title>Stok Opname Mobile</title>
-    <link rel="icon" type="image/png" href="icon.png">
-
-    <!-- PWA Manifest & Meta Tags -->
+    
+    <!-- PWA Manifest & Meta Tags (Dibersihkan dari duplikasi) -->
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="./icon.png">
     <meta name="theme-color" content="#0284c7">
+    
+    <!-- iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icon.png">
@@ -1236,7 +1236,7 @@
             }
         });
 
-        // --- EFEK GETAR GLOBAL (HAPTIC FEEDBACK OTOMATIS & RESPONSIF) ---
+        // --- EFEK GETAR GLOBAL (HAPTIC FEEDBACK OTOMATIS, LENGKAP & RESPONSIF) ---
         document.addEventListener('DOMContentLoaded', () => {
             // Fungsi helper pemanggil getar aman
             const triggerHaptic = (duration = 35) => {
@@ -1244,26 +1244,36 @@
                     try {
                         navigator.vibrate(duration);
                     } catch (e) {
-                        // Abaikan jika diblokir kebijakan browser
+                        // Abaikan jika diblokir oleh kebijakan browser
                     }
                 }
             };
 
-            // 1. Getar instan seketika tombol disentuh menggunakan pointerdown
+            // Selector universal mencakup tombol navbar, menu setelan, modal download, item saran, dll.
+            const clickableSelector = 'button, a, input[type="button"], input[type="submit"], .clickable, [role="button"], .nav-item, .menu-card, .fab-button, #saran-autocomplete > div, #containerListArsipMaster > div';
+
+            // 1. Getar instan seketika elemen interaktif disentuh (Pointer Event)
             document.addEventListener('pointerdown', (e) => {
-                const target = e.target.closest('button, a, input[type="button"], input[type="submit"], .clickable, [role="button"]');
+                const target = e.target.closest(clickableSelector);
                 if (target) {
-                    triggerHaptic(35); // Getar pendek & mantap saat tombol disentuh
+                    triggerHaptic(35); // Getar pendek & mantap
                 }
             }, { passive: true });
 
-            // 2. Getar lembut saat fokus ke kolom input / select
+            // 2. Getar saat terjadi perubahan nilai pada dropdown (<select>)
+            document.addEventListener('change', (e) => {
+                if (e.target && e.target.tagName === 'SELECT') {
+                    triggerHaptic(30); // Getar saat item dropdown dipilih
+                }
+            });
+
+            // 3. Getar lembut saat fokus ke kolom input / select
             document.addEventListener('focusin', (e) => {
                 const target = e.target;
                 if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
-                    triggerHaptic(20); // Getar halus saat kolom input disentuh
+                    triggerHaptic(20); // Getar halus saat kolom disentuh
                     
-                    // Auto-scroll agar tidak tertutup keyboard HP
+                    // Auto-scroll agar input tidak tertutup keyboard HP
                     setTimeout(() => {
                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }, 300);
