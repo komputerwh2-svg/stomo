@@ -1224,6 +1224,52 @@
                 modal.classList.add('hidden');
             }
         }
+
+        // --- AUTO SCROLL KETIKA INPUT DIKETIK AGAR TIDAK TERTUTUP KEYBOARD HP ---
+        document.addEventListener('focusin', function(e) {
+            // Cek apakah yang diklik/difokuskan adalah elemen input, select, atau textarea
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+                // Beri sedikit jeda agar virtual keyboard sempat muncul di layar mobile
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        });
+
+        // --- EFEK GETAR GLOBAL (HAPTIC FEEDBACK OTOMATIS) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fungsi helper pemanggil getar aman
+            const triggerHaptic = (duration = 35) => {
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    try {
+                        navigator.vibrate(duration);
+                    } catch (e) {
+                        // Abaikan jika diblokir kebijakan browser
+                    }
+                }
+            };
+
+            // 1. Getar saat mengklik tombol, link, atau elemen interaktif
+            document.addEventListener('click', (e) => {
+                const target = e.target.closest('button, a, input[type="button"], input[type="submit"], .clickable, role="button"');
+                if (target) {
+                    triggerHaptic(35); // Getar pendek & lembut saat diklik
+                }
+            });
+
+            // 2. Getar lembut saat mulai mengetik atau fokus ke kolom input / select
+            document.addEventListener('focusin', (e) => {
+                const target = e.target;
+                if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+                    triggerHaptic(20); // Getar sangat halus saat kolom input disentuh/difokuskan
+                    
+                    // Sekalian aktifkan auto-scroll agar tidak tertutup keyboard HP
+                    setTimeout(() => {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                }
+            });
+        });
     </script>
 
     <script>
@@ -2520,7 +2566,7 @@
             }
         }
 
-        // --- 2. FUNGSI SIMPAN KE INDEXEDDB (MURNI ANGKA & FORMAT BOSNET) ---
+        // --- 2. FUNGSI SIMPAN KE INDEXEDDB (DENGAN PENGAMAN VALIDASI QTY KOSONG) ---
         function simpanStokOpname() {
             const gudang = localStorage.getItem('stomo_gudang') || '';
             const user = localStorage.getItem('stomo_user') || '';
@@ -2533,10 +2579,12 @@
 
             if(!kode) {
                 if (typeof customAlert === 'function') customAlert("Mohon masukkan Kode atau Nama Barang!");
+                else alert("Mohon masukkan Kode atau Nama Barang!");
                 return;
             }
             if(!lokasi && !gudang.toUpperCase().includes('BLOK')) {
                 if (typeof customAlert === 'function') customAlert("Mohon pilih Lokasi / Rak!");
+                else alert("Mohon pilih Lokasi / Rak!");
                 return;
             }
 
@@ -2570,6 +2618,17 @@
                 qtyPcs = 0;
 
                 qtyValText = `${qtyKrt}/0/0/0`;
+            }
+
+            // --- PENGAMAN VALIDASI: CEK APAKAH TOTAL QTY MASIH KOSONG / 0 ---
+            const totalQtyInput = qtyKrt + qtyBall + qtyRtg + qtyPcs;
+            if (totalQtyInput <= 0) {
+                if (typeof customAlert === 'function') {
+                    customAlert("Jumlah Qty fisik masih kosong atau 0! Harap isi kuantitas barang terlebih dahulu.");
+                } else {
+                    alert("Jumlah Qty fisik masih kosong atau 0! Harap isi kuantitas barang terlebih dahulu.");
+                }
+                return; // Batalkan proses simpan jika Qty kosong
             }
 
             let dataSO = {
@@ -3614,12 +3673,11 @@
             });
         }
 
-        // --- RENDER TABEL REKAPITULASI (FORMAT BOSNET KRT/BALL/RTG/PCS DENGAN FULL STICKY & INNER SCROLL) ---
+        // --- RENDER TABEL LAPORAN (CLEAN STICKY KIRI & SCROLL HALUS) ---
         function renderTabelLaporan(masterData, semuaSO, gudangAktif, tanggalArsip = "") {
             const container = document.getElementById('container-tabel-laporan');
             if (!container) return;
 
-            // Proteksi null/undefined untuk masterData dan semuaSO
             if (!masterData) masterData = {};
             if (!Array.isArray(semuaSO)) semuaSO = [];
 
@@ -3632,7 +3690,6 @@
             const isGudangWH3Induk = gudangUpper === 'WH-3' || (gudangUpper.includes('WH-3') && !gudangUpper.includes('BLOK'));
             const isGudangBlok = gudangUpper === 'WH-3 BLOK' || gudangUpper === 'WH-3_BLOK';
 
-            // --- AMBIL DATA HASIL OPNAME DARI WH-3_BLOK JIKA DI WH-3 INDUK ---
             let rekapQtyBlokMap = {};
             if (isGudangWH3Induk) {
                 if (window._gudangAktifTerakhir !== gudangAktif) {
@@ -3914,7 +3971,7 @@
                 return;
             }
 
-            // --- STRUKTUR HTML TABEL DENGAN INNER VERTICAL & HORIZONTAL SCROLL + FULL STICKY ---
+            // --- STRUKTUR HTML TABEL (STICKY KIRI UTAMA, HEADER STICKY, INNER VERTICAL & HORIZONTAL SCROLL) ---
             let html = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
                     <div class="overflow-x-auto max-h-[calc(100vh-270px)] relative">
@@ -3960,11 +4017,11 @@
                 `;
             });
 
-            // Header Kolom Kanan yang Dikunci (Sticky Right)
+            // Header Kolom Kanan (Ikut Bergeser Normal, Tanpa Sticky Kanan agar Tidak Bertumpuk)
             html += `
-                                    <th class="p-3 text-center bg-emerald-100/90 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 min-w-[110px] sticky right-[230px] top-0 z-50 border-b border-l border-slate-200 dark:border-slate-700 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total QTY Rekap</th>
-                                    <th class="p-3 text-center bg-purple-100/90 dark:bg-purple-950/90 text-purple-700 dark:text-purple-300 min-w-[100px] sticky right-[130px] top-0 z-50 border-b border-slate-200 dark:border-slate-700 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Selisih</th>
-                                    <th class="p-3 text-center min-w-[130px] sticky right-0 top-0 bg-slate-100 dark:bg-slate-800 z-50 border-b border-slate-200 dark:border-slate-700 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Keterangan</th>
+                                    <th class="p-3 text-center bg-emerald-100/90 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 min-w-[110px] sticky top-0 z-30 border-b border-r border-slate-200 dark:border-slate-700">Total QTY Rekap</th>
+                                    <th class="p-3 text-center bg-purple-100/90 dark:bg-purple-950/90 text-purple-700 dark:text-purple-300 min-w-[100px] sticky top-0 z-30 border-b border-r border-slate-200 dark:border-slate-700">Selisih</th>
+                                    <th class="p-3 text-center min-w-[130px] sticky top-0 bg-slate-100 dark:bg-slate-800 z-30 border-b border-slate-200 dark:border-slate-700">Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -4072,13 +4129,13 @@
                 }
 
                 html += `
-                        <td class="p-3 text-center font-black text-emerald-600 dark:text-emerald-400 font-mono align-middle bg-emerald-50/40 dark:bg-emerald-950/20 text-xs sticky right-[230px] z-20 border-l border-slate-100 dark:border-slate-800 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <td class="p-3 text-center font-black text-emerald-600 dark:text-emerald-400 font-mono align-middle bg-emerald-50/40 dark:bg-emerald-950/20 text-xs border-r border-slate-100 dark:border-slate-800">
                             ${adaDataInput ? rekapTeksFormat : '-'}
                         </td>
-                        <td class="p-3 text-center font-black font-mono align-middle bg-purple-50/40 dark:bg-purple-950/20 text-xs text-purple-700 dark:text-purple-300 sticky right-[130px] z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <td class="p-3 text-center font-black font-mono align-middle bg-purple-50/40 dark:bg-purple-950/20 text-xs text-purple-700 dark:text-purple-300 border-r border-slate-100 dark:border-slate-800">
                             ${adaDataInput ? selisihTeksFormat : '-'}
                         </td>
-                        <td class="p-3 text-center align-middle sticky right-0 bg-white dark:bg-slate-900 z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <td class="p-3 text-center align-middle bg-white dark:bg-slate-900">
                             ${badgeKeterangan}
                         </td>
                     </tr>
